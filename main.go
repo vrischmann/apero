@@ -3,6 +3,7 @@ package main
 import (
 	crypto_rand "crypto/rand"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -19,9 +20,29 @@ type clientConfig struct {
 	SenderPrivateKey   string
 }
 
+func (c clientConfig) Validate() error {
+	if c.RecipientPublicKey == "" {
+		return errors.New("recipient public key is empty")
+	}
+	if c.SenderPrivateKey == "" {
+		return errors.New("sender private key is empty")
+	}
+	return nil
+}
+
 type serverConfig struct {
 	RecipientPrivateKey string
 	SenderPublicKey     string
+}
+
+func (c serverConfig) Validate() error {
+	if c.RecipientPrivateKey == "" {
+		return errors.New("recipient private key is empty")
+	}
+	if c.SenderPublicKey == "" {
+		return errors.New("sender public key is empty")
+	}
+	return nil
 }
 
 func runGenKeys() error {
@@ -103,12 +124,17 @@ func readStdin() string {
 }
 
 func main() {
+	var (
+		flConfig = flag.String("config", "~/.apero.toml", "Configuration file to use")
+	)
+
 	flag.Usage = func() {
 		fmt.Printf("Usage: apero [option] <command> [option]\n\n")
 		fmt.Printf("Available commands are:\n")
 		fmt.Printf("    genkeys %50s\n", "generate public and private keys")
 		fmt.Printf("    encrypt %50s\n", "encrypt a message")
 		fmt.Printf("    decrypt %50s\n", "decrypt a message")
+		fmt.Printf("\nOptions are:\n")
 		flag.PrintDefaults()
 		fmt.Println()
 	}
@@ -118,6 +144,8 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	//
 
 	cmd := flag.Arg(0)
 	args := flag.Args()[1:]
@@ -130,15 +158,10 @@ func main() {
 	case "encrypt":
 		fs := flag.NewFlagSet("encrypt", flag.ContinueOnError)
 		fs.Usage = func() {
-			fmt.Printf("Usage: apero encrypt --recipient-public-key <key> --sender-private-key <key>\n\n")
+			fmt.Printf("Usage: echo foobar | apero encrypt\n\n")
 			fs.PrintDefaults()
 			fmt.Println()
 		}
-		var (
-			flRecipientPubKey = fs.String("recipient-public-key", "", "The recipient's public key")
-			flSenderPrivKey   = fs.String("sender-private-key", "", "The sender's private key")
-		)
-
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
 			os.Exit(1)
@@ -146,24 +169,20 @@ func main() {
 
 		//
 
-		switch {
-		case *flRecipientPubKey == "":
-			fmt.Printf("no recipient public key\n\n")
-			fs.Usage()
-			os.Exit(1)
-
-		case *flSenderPrivKey == "":
-			fmt.Printf("no sender private key\n\n")
-			fs.Usage()
-			os.Exit(1)
+		var conf clientConfig
+		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
+			log.Fatal(err)
+		}
+		if err := conf.Validate(); err != nil {
+			log.Fatal(err)
 		}
 
 		//
 
 		var (
 			msg             = readStdin()
-			recipientPubKey = parseKey(*flRecipientPubKey)
-			senderPrivKey   = parseKey(*flSenderPrivKey)
+			recipientPubKey = parseKey(conf.RecipientPublicKey)
+			senderPrivKey   = parseKey(conf.SenderPrivateKey)
 			nonce           = getNonce()
 		)
 
@@ -171,7 +190,7 @@ func main() {
 
 		ciphertext := box.Seal(nonce[:], []byte(msg), &nonce, recipientPubKey, senderPrivKey)
 
-		fmt.Printf("%x\n", ciphertext)
+		fmt.Printf("%x", ciphertext)
 
 	case "decrypt":
 		fs := flag.NewFlagSet("decrypt", flag.ContinueOnError)
@@ -180,10 +199,6 @@ func main() {
 			fs.PrintDefaults()
 			fmt.Println()
 		}
-		var (
-			flRecipientPrivKey = fs.String("recipient-private-key", "", "The recipient's private key")
-			flSenderPubKey     = fs.String("sender-public-key", "", "The sender's public key")
-		)
 
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
@@ -192,16 +207,12 @@ func main() {
 
 		//
 
-		switch {
-		case *flRecipientPrivKey == "":
-			fmt.Printf("no recipient private key\n\n")
-			fs.Usage()
-			os.Exit(1)
-
-		case *flSenderPubKey == "":
-			fmt.Printf("no sender public key\n\n")
-			fs.Usage()
-			os.Exit(1)
+		var conf serverConfig
+		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
+			log.Fatal(err)
+		}
+		if err := conf.Validate(); err != nil {
+			log.Fatal(err)
 		}
 
 		//
@@ -216,8 +227,8 @@ func main() {
 		var (
 			decryptNonce [24]byte
 
-			recipientPrivKey = parseKey(*flRecipientPrivKey)
-			senderPubKey     = parseKey(*flSenderPubKey)
+			recipientPrivKey = parseKey(conf.RecipientPrivateKey)
+			senderPubKey     = parseKey(conf.SenderPublicKey)
 		)
 
 		// Nonce is preprended to ciphertext

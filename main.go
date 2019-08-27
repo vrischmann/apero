@@ -152,6 +152,9 @@ func main() {
 
 	var err error
 	switch cmd {
+	case "serve":
+		err = nil
+
 	case "genkeys":
 		err = runGenKeys()
 

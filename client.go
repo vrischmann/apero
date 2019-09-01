@@ -1,18 +1,27 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"net/url"
+
+	"golang.org/x/crypto/ed25519"
+)
 
 type clientConfig struct {
-	RecipientPublicKey string
-	SenderPrivateKey   string
+	Endpoint   string
+	PublicKey  ed25519.PublicKey
+	PrivateKey ed25519.PrivateKey
 }
 
 func (c clientConfig) Validate() error {
-	if c.RecipientPublicKey == "" {
-		return errors.New("recipient public key is empty")
+	if _, err := url.Parse(c.Endpoint); err != nil {
+		return err
 	}
-	if c.SenderPrivateKey == "" {
-		return errors.New("sender private key is empty")
+	if len(c.PublicKey) != ed25519.PublicKeySize {
+		return errors.New("public key size is invalid")
+	}
+	if len(c.PrivateKey) != ed25519.PrivateKeySize {
+		return errors.New("private key size is invalid")
 	}
 	return nil
 }
@@ -28,5 +37,9 @@ func newClient(conf clientConfig) *client {
 }
 
 func (c *client) doCopy(req copyRequest) error {
+	panic("not implemented")
+}
+
+func (c *client) doRegister(req registerRequest) error {
 	panic("not implemented")
 }

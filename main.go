@@ -2,6 +2,7 @@ package main
 
 import (
 	crypto_rand "crypto/rand"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/vrischmann/hutil/v2"
+	"golang.org/x/crypto/ed25519"
 )
 
 func getNonce() [24]byte {
@@ -63,9 +65,23 @@ func main() {
 
 	var err error
 	switch cmd {
+	case "copy":
+		fs := flag.NewFlagSet("copy", flag.ContinueOnError)
+		if err := fs.Parse(args); err != nil {
+			fs.Usage()
+			os.Exit(1)
+		}
+
+		var conf clientConfig
+		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
+			log.Fatal(err)
+		}
+		if err := conf.Validate(); err != nil {
+			log.Fatal(err)
+		}
+
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-		flAddr := fs.String("addr", ":7568", "The listen address")
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
 			os.Exit(1)
@@ -90,12 +106,13 @@ func main() {
 			log.Printf("[%3d] %s %d %s", statusCode, req.URL.Path, responseSize, elapsed)
 		}))
 
-		err = http.ListenAndServe(*flAddr, chain.Handler(server))
+		err = http.ListenAndServe(conf.ListenAddr, chain.Handler(server))
 
 	case "genkeys":
 		fs := flag.NewFlagSet("genkeys", flag.ContinueOnError)
 		flServer := fs.Bool("server", false, "Generate the keys for a server")
 		flDeviceID := fs.Bool("device-id", false, "Generate a device ID. Useful only for debugging")
+		flKeyPair := fs.Bool("keypair", false, "Generate a ed25519 key pair. Useful only for debugging")
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
 			os.Exit(1)
@@ -117,6 +134,15 @@ func main() {
 			}
 
 			fmt.Printf("Key = %q\n", key)
+
+		case *flKeyPair:
+			privateKey, publicKey, err := ed25519.GenerateKey(crypto_rand.Reader)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Printf("PrivateKey = %q\n", base64.StdEncoding.EncodeToString(privateKey))
+			fmt.Printf("PublicKey = %q\n", base64.StdEncoding.EncodeToString(publicKey))
 
 		default:
 			fs.Usage()

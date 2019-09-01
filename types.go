@@ -8,7 +8,6 @@ import (
 	"log"
 
 	"golang.org/x/crypto/ed25519"
-	"golang.org/x/crypto/nacl/secretbox"
 )
 
 const (
@@ -42,6 +41,17 @@ var deviceIDAllZeroes deviceID
 
 type deviceID [deviceIDSize]byte
 
+func deviceIDFromBytes(p []byte) deviceID {
+	if len(p) != deviceIDSize {
+		panic("invalid device id size")
+	}
+
+	var id deviceID
+	copy(id[:], p)
+
+	return id
+}
+
 func (d deviceID) String() string {
 	return base64.StdEncoding.EncodeToString(d[:])
 }
@@ -59,15 +69,9 @@ func newDeviceID() deviceID {
 }
 
 type copyRequest struct {
-	DeviceID   []byte
-	Signature  []byte
-	Ciphertext []byte
-}
-
-func (r *copyRequest) GetDeviceID() deviceID {
-	var id deviceID
-	copy(id[:], r.DeviceID)
-	return id
+	DeviceID  []byte
+	Signature []byte
+	Content   []byte
 }
 
 func (r copyRequest) Validate() error {
@@ -75,10 +79,25 @@ func (r copyRequest) Validate() error {
 		return fmt.Errorf("DeviceID is empty or invalid")
 	}
 	if len(r.Signature) != ed25519.SignatureSize {
-		return fmt.Errorf("Signature is not the correct size")
+		return fmt.Errorf("Signature size is invalid")
 	}
-	if len(r.Ciphertext) < secretbox.Overhead {
-		return fmt.Errorf("Ciphertext is too short")
+	if len(r.Content) == 0 {
+		return fmt.Errorf("Content is empty")
+	}
+	return nil
+}
+
+type registerRequest struct {
+	DeviceID  []byte
+	PublicKey ed25519.PublicKey
+}
+
+func (r registerRequest) Validate() error {
+	if len(r.DeviceID) != deviceIDSize {
+		return fmt.Errorf("DeviceID is empty or invalid")
+	}
+	if len(r.PublicKey) < ed25519.PublicKeySize {
+		return fmt.Errorf("PublicKey size is invalid")
 	}
 	return nil
 }

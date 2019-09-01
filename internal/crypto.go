@@ -81,16 +81,6 @@ func (k PrivateKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
 }
 
-// UnmarshalJSON implements json.Unmarshaler
-func (k *PrivateKey) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-
-	return k.UnmarshalText([]byte(s))
-}
-
 // UnmarshalTExt implements encoding.TextUnmarshaler
 func (k *PrivateKey) UnmarshalText(p []byte) error {
 	data, err := base64.StdEncoding.DecodeString(string(p))

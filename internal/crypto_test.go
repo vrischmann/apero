@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -36,6 +37,35 @@ func TestKeyPairString(t *testing.T) {
 			t.Fatalf("expected %q but got %q", exp, got)
 		}
 	})
+}
+
+func TestPublicKeyUnmarshalJSON(t *testing.T) {
+	pub, _, err := GenerateKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var obj struct {
+		Key PublicKey
+	}
+	obj.Key = pub
+
+	data, err := json.Marshal(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var obj2 struct {
+		Key PublicKey
+	}
+	err = json.Unmarshal(data, &obj2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if exp, got := pub, obj2.Key; !bytes.Equal(exp, got) {
+		t.Fatalf("expected %q but got %q", exp, got)
+	}
 }
 
 func TestKeyPairUnmarshalText(t *testing.T) {

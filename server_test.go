@@ -12,6 +12,7 @@ func TestServerConfigUnmarshalText(t *testing.T) {
 	const data = `
 ListenAddr = "localhost:7568"
 PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
+SignPublicKey = "GKlTcESb8Qm8KH+3wWoPWMf7DvVUWYzsKymvUKhhTo8="
 `
 
 	var conf serverConfig

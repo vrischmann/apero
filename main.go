@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -134,6 +135,7 @@ func main() {
 		fmt.Printf("    genkeys %50s\n", "generate public and private keys")
 		fmt.Printf("    encrypt %50s\n", "encrypt a message")
 		fmt.Printf("    decrypt %50s\n", "decrypt a message")
+		fmt.Printf("    serve %50s\n", "serve the API endpoints")
 		fmt.Printf("\nOptions are:\n")
 		flag.PrintDefaults()
 		fmt.Println()
@@ -153,7 +155,28 @@ func main() {
 	var err error
 	switch cmd {
 	case "serve":
-		err = nil
+		fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+		flAddr := fs.String("addr", ":7568", "The listen address")
+		if err := fs.Parse(args); err != nil {
+			fs.Usage()
+			os.Exit(1)
+		}
+
+		//
+
+		var conf serverConfig
+		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
+			log.Fatal(err)
+		}
+		if err := conf.Validate(); err != nil {
+			log.Fatal(err)
+		}
+
+		//
+
+		server := &server{}
+
+		err = http.ListenAndServe(*flAddr, server)
 
 	case "genkeys":
 		err = runGenKeys()
@@ -198,7 +221,7 @@ func main() {
 	case "decrypt":
 		fs := flag.NewFlagSet("decrypt", flag.ContinueOnError)
 		fs.Usage = func() {
-			fmt.Printf("Usage: apero decrypt --recipient-private-key <key> --sender-public-key <key>\n\n")
+			fmt.Printf("Usage: echo ciphertext | apero decrypt\n\n")
 			fs.PrintDefaults()
 			fmt.Println()
 		}

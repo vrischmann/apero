@@ -8,11 +8,11 @@ jobs:
     strategy:
       matrix:
         go: [ '1.11', '1.12', ]
-    name: Build with go ${{ matrix.go }}
+    name: Test with go ${{ matrix.go }}
     steps:
       - uses: actions/checkout@master
       - name: Setup go
         uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go }}
-      - run: go build
+      - run: go test -mod=readonly -v ./...

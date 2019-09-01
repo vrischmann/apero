@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"net/http/httptest"
 	"testing"
 
@@ -9,7 +8,7 @@ import (
 	"rischmann.fr/apero/internal"
 )
 
-func TestServerConfig(t *testing.T) {
+func TestServerConfigUnmarshalText(t *testing.T) {
 	const data = `
 ListenAddr = "localhost:7568"
 PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
@@ -22,6 +21,9 @@ PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
 	}
 	if got := len(md.Undecoded()); got > 0 {
 		t.Fatal("expected no undecoded keys")
+	}
+	if err := conf.Validate(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -51,8 +53,11 @@ func TestShiftPath(t *testing.T) {
 }
 
 func TestServerClient(t *testing.T) {
+	publicKey, privateKey := mustKeyPair(t)
+
 	var conf serverConfig
 	conf.PSKey = internal.NewSecretBoxKey()
+	conf.SignPublicKey = publicKey
 
 	server := newServer(conf)
 
@@ -65,32 +70,11 @@ func TestServerClient(t *testing.T) {
 	clientConf.Endpoint = httpServer.URL
 	clientConf.PSKey = conf.PSKey
 	clientConf.EncryptKey = internal.NewSecretBoxKey()
-	clientConf.PublicKey, clientConf.PrivateKey = mustKeyPair(t)
+	clientConf.SignPublicKey = publicKey
+	clientConf.SignPrivateKey = privateKey
 
 	client := newClient(clientConf)
-
-	t.Run("register", func(t *testing.T) {
-		req := registerRequest{
-			DeviceID:  internal.NewDeviceID(),
-			PublicKey: clientConf.PublicKey,
-		}
-
-		err := client.doRegister(req)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// verify the store
-
-		pk, err := server.store.LookupPublicKey(req.DeviceID)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if exp, got := clientConf.PublicKey, pk; !bytes.Equal(exp, got) {
-			t.Fatalf("expected %q but got %q", exp, got)
-		}
-	})
+	_ = client
 
 	t.Run("copy", func(t *testing.T) {
 	})

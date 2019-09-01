@@ -47,6 +47,10 @@ func (k PublicKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
 }
 
+func (k PublicKey) IsValid() bool {
+	return len(k) == PublicKeySize
+}
+
 // UnmarshalJSON implements json.Unmarshaler
 func (k *PublicKey) UnmarshalJSON(data []byte) error {
 	var s string
@@ -81,6 +85,10 @@ type PrivateKey ed25519.PrivateKey
 
 func (k PrivateKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
+}
+
+func (k PrivateKey) IsValid() bool {
+	return len(k) == PrivateKeySize
 }
 
 // UnmarshalTExt implements encoding.TextUnmarshaler
@@ -124,6 +132,10 @@ func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
 		return nil, err
 	}
 	return &key, nil
+}
+
+func (k SecretBoxKey) IsValid() bool {
+	return len(k) == SecretBoxKeySize
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler

@@ -13,11 +13,11 @@ import (
 )
 
 type clientConfig struct {
-	Endpoint   string
-	PSKey      internal.SecretBoxKey
-	EncryptKey internal.SecretBoxKey
-	PublicKey  internal.PublicKey
-	PrivateKey internal.PrivateKey
+	Endpoint       string
+	PSKey          internal.SecretBoxKey
+	EncryptKey     internal.SecretBoxKey
+	SignPublicKey  internal.PublicKey
+	SignPrivateKey internal.PrivateKey
 }
 
 func (c clientConfig) Validate() error {

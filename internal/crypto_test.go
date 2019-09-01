@@ -84,7 +84,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if exp, got := s, key.String(); exp != got {
+			if exp, got := pub, key; !bytes.Equal(exp, got) {
 				t.Fatalf("expected %q, got %q", exp, got)
 			}
 		})
@@ -100,6 +100,9 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 			}
 			if got := len(md.Undecoded()); got > 0 {
 				t.Fatal("expected no undecoded keys")
+			}
+			if exp, got := pub, obj.Key; !bytes.Equal(exp, got) {
+				t.Fatalf("expected %q, got %q", exp, got)
 			}
 		})
 	})

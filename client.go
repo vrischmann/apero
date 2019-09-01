@@ -54,10 +54,10 @@ func (c *client) doRegister(req registerRequest) error {
 		return err
 	}
 
-	log.Printf("buf: %s", buf.String())
+	data := internal.SecretBoxSeal(buf.Bytes(), c.conf.PSKey)
 
 	u := c.makeURL("/register")
-	hreq, err := http.NewRequest(http.MethodPost, u, &buf)
+	hreq, err := http.NewRequest(http.MethodPost, u, bytes.NewReader(data))
 	if err != nil {
 		return err
 	}

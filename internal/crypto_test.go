@@ -148,3 +148,18 @@ func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 		t.Fatalf("expected %q, got %q", exp, got)
 	}
 }
+
+func TestSecretBox(t *testing.T) {
+	k := NewSecretBoxKey()
+
+	data := []byte("foobar")
+
+	box := SecretBoxSeal(data, k)
+	decrypted, ok := SecretBoxOpen(box, k)
+	if !ok {
+		t.Fatal("expected to open the box")
+	}
+	if exp, got := data, decrypted; !bytes.Equal(exp, got) {
+		t.Fatalf("expected %q but bot %q", string(exp), string(got))
+	}
+}

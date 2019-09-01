@@ -6,9 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 
 	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 const (
@@ -144,6 +146,31 @@ func (k *SecretBoxKey) UnmarshalText(p []byte) error {
 // String returns the key as a base64 encoded string.
 func (k SecretBoxKey) String() string {
 	return base64.StdEncoding.EncodeToString(k[:])
+}
+
+func SecretBoxSeal(data []byte, key SecretBoxKey) []byte {
+	nonce := getNonce()
+	encrypted := secretbox.Seal(nonce[:], data, &nonce, (*[32]byte)(&key))
+
+	return encrypted
+}
+
+func SecretBoxOpen(box []byte, key SecretBoxKey) ([]byte, bool) {
+	var nonce [24]byte
+	copy(nonce[:], box[:24])
+
+	box = box[24:]
+
+	return secretbox.Open(nil, box, &nonce, (*[32]byte)(&key))
+}
+
+func getNonce() [24]byte {
+	var nonce [24]byte
+	if _, err := io.ReadFull(crypto_rand.Reader, nonce[:]); err != nil {
+		panic(err)
+	}
+
+	return nonce
 }
 
 func VerifySignature(pk PublicKey, content, signature []byte) bool {

@@ -1,10 +1,8 @@
 package main
 
 import (
-	crypto_rand "crypto/rand"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,15 +13,6 @@ import (
 	"github.com/vrischmann/hutil/v2"
 	"rischmann.fr/apero/internal"
 )
-
-func getNonce() [24]byte {
-	var nonce [24]byte
-	if _, err := io.ReadFull(crypto_rand.Reader, nonce[:]); err != nil {
-		panic(err)
-	}
-
-	return nonce
-}
 
 func readStdin() string {
 	data, err := ioutil.ReadAll(os.Stdin)

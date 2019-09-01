@@ -136,6 +136,15 @@ func (s *server) handleRegister(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
+	data, ok := internal.SecretBoxOpen(data, s.conf.PSKey)
+	if !ok {
+		log.Printf("unable to decrypt")
+		responseStatusCode(w, http.StatusBadRequest)
+		return
+	}
+
+	//
+
 	var payload registerRequest
 	if err := json.Unmarshal(data, &payload); err != nil {
 		log.Printf("unable to unmarshal copy request payload. err=%v", err)

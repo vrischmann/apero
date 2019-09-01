@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	// SharedKeySize is the size of the key shared between server
+	// SecretBoxKeySize is the size of the key shared between server
 	// and clients. It must be equal to what is used by secretbox.
 	// See https://godoc.org/golang.org/x/crypto/nacl/secretbox#Seal.
-	SharedKeySize = 32
+	SecretBoxKeySize = 32
 
 	// PublicKeySize is the size of a public key part of a key pair.
 	// It must always be equal to ed25519.PublicKeySize.
@@ -38,29 +38,31 @@ func (k *PublicKey) UnmarshalText(s string) error {
 		return fmt.Errorf("invalid shared key size")
 	}
 
+	*k = make(PublicKey, PublicKeySize)
+
 	copy((*k)[:], data)
 
 	return nil
 }
 
-// SharedKey is the key shared between server and clients
+// SecretBoxKey is the key shared between server and clients
 // to encrypt and authenticate messages.
 //
 // It is _not_ used to
-type SharedKey [SharedKeySize]byte
+type SecretBoxKey [SecretBoxKeySize]byte
 
-// NewSharedKey creates a new, random device id.
-func NewSharedKey() SharedKey {
-	var id SharedKey
+// NewSecretBoxKey creates a new, random device id.
+func NewSecretBoxKey() SecretBoxKey {
+	var id SecretBoxKey
 	if _, err := crypto_rand.Read(id[:]); err != nil {
 		log.Fatalf("unable to read random data. err=%v", err)
 	}
 	return id
 }
 
-// SharedKeyFromString parses a string as a shared key.
-func SharedKeyFromString(s string) (*SharedKey, error) {
-	var key SharedKey
+// SecretBoxKeyFromString parses a string as a shared key.
+func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
+	var key SecretBoxKey
 
 	if err := (&key).UnmarshalText(s); err != nil {
 		return nil, err
@@ -70,13 +72,13 @@ func SharedKeyFromString(s string) (*SharedKey, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 // It assumes the string is base64 encoded.
-func (k *SharedKey) UnmarshalText(s string) error {
+func (k *SecretBoxKey) UnmarshalText(s string) error {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		return err
 	}
 
-	if len(data) != SharedKeySize {
+	if len(data) != SecretBoxKeySize {
 		return fmt.Errorf("invalid shared key size")
 	}
 
@@ -86,7 +88,7 @@ func (k *SharedKey) UnmarshalText(s string) error {
 }
 
 // String returns the key as a base64 encoded string.
-func (k SharedKey) String() string {
+func (k SecretBoxKey) String() string {
 	return base64.StdEncoding.EncodeToString(k[:])
 }
 

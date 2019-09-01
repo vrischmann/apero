@@ -126,7 +126,7 @@ func main() {
 			fmt.Printf("%s\n", id.String())
 
 		case *flServer:
-			var key internal.SharedKey
+			var key internal.SecretBoxKey
 			if _, err := crypto_rand.Read(key[:]); err != nil {
 				log.Fatal(err)
 			}

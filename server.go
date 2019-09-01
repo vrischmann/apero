@@ -14,7 +14,7 @@ import (
 
 type serverConfig struct {
 	ListenAddr string
-	Key        internal.SharedKey
+	Key        internal.SecretBoxKey
 }
 
 func (c serverConfig) Validate() error {

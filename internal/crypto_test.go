@@ -16,10 +16,10 @@ func TestPublicKeyUnmarshalText(t *testing.T) {
 	}
 }
 
-func TestSharedKeyUnmarshalText(t *testing.T) {
+func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 	const s = `WYBwj9jL9VxlaLlbpMPEMU3SJCgwh7fNVqJgSt74K38=`
 
-	var key SharedKey
+	var key SecretBoxKey
 	err := (&key).UnmarshalText(s)
 	if err != nil {
 		t.Fatal(err)

@@ -9,7 +9,7 @@ import (
 
 type clientConfig struct {
 	Endpoint   string
-	Key        internal.SharedKey
+	Key        internal.SecretBoxKey
 	EncryptKey string
 	PublicKey  ed25519.PublicKey
 	PrivateKey ed25519.PrivateKey

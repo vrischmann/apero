@@ -1,9 +1,42 @@
 package internal
 
 import (
-	"github.com/BurntSushi/toml"
+	"bytes"
 	"testing"
+
+	"github.com/BurntSushi/toml"
 )
+
+func TestKeyPairString(t *testing.T) {
+	pub, priv, err := GenerateKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("public", func(t *testing.T) {
+		var k PublicKey
+		err := (&k).UnmarshalText([]byte(pub.String()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if exp, got := pub, k; !bytes.Equal(exp, got) {
+			t.Fatalf("expected %q but got %q", exp, got)
+		}
+	})
+
+	t.Run("private", func(t *testing.T) {
+		var k PrivateKey
+		err := (&k).UnmarshalText([]byte(priv.String()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if exp, got := priv, k; !bytes.Equal(exp, got) {
+			t.Fatalf("expected %q but got %q", exp, got)
+		}
+	})
+}
 
 func TestPublicKeyUnmarshalText(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {

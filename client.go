@@ -8,8 +8,8 @@ import (
 
 type clientConfig struct {
 	Endpoint   string
-	Key        internal.SecretBoxKey
-	EncryptKey string
+	PSKey      internal.SecretBoxKey
+	EncryptKey internal.SecretBoxKey
 	PublicKey  internal.PublicKey
 	PrivateKey internal.PrivateKey
 }

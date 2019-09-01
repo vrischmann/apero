@@ -2,7 +2,6 @@ package main
 
 import (
 	crypto_rand "crypto/rand"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/vrischmann/hutil/v2"
-	"golang.org/x/crypto/ed25519"
 	"rischmann.fr/apero/internal"
 )
 
@@ -131,13 +129,13 @@ func main() {
 			fmt.Printf("Key = %q\n", key)
 
 		case *flKeyPair:
-			privateKey, publicKey, err := ed25519.GenerateKey(crypto_rand.Reader)
+			publicKey, privateKey, err := internal.GenerateKeyPair()
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			fmt.Printf("PrivateKey = %q\n", base64.StdEncoding.EncodeToString(privateKey))
-			fmt.Printf("PublicKey = %q\n", base64.StdEncoding.EncodeToString(publicKey))
+			fmt.Printf("PrivateKey = %q\n", privateKey)
+			fmt.Printf("PublicKey = %q\n", publicKey)
 
 		default:
 			fs.Usage()

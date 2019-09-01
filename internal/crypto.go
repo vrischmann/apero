@@ -26,12 +26,23 @@ const (
 	PrivateKeySize = ed25519.PrivateKeySize
 )
 
+// GenerateKeyPair generates a public/private key pair.
+// It uses ed25519 under the hood.
+func GenerateKeyPair() (PublicKey, PrivateKey, error) {
+	publicKey, privateKey, err := ed25519.GenerateKey(crypto_rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return PublicKey(publicKey), PrivateKey(privateKey), nil
+}
+
 // PublicKey is the public key part of a key pair.
 // We redefined the type so we can implement encoding.TextUnmarshaler.
 type PublicKey ed25519.PublicKey
 
-func (k *PublicKey) String() string {
-	return base64.StdEncoding.EncodeToString(*k)
+func (k PublicKey) String() string {
+	return base64.StdEncoding.EncodeToString(k)
 }
 
 // UnmarshalJSON implements json.Unmarshaler
@@ -52,7 +63,7 @@ func (k *PublicKey) UnmarshalText(p []byte) error {
 	}
 
 	if len(data) != PublicKeySize {
-		return fmt.Errorf("invalid shared key size")
+		return fmt.Errorf("invalid public key size")
 	}
 
 	*k = make(PublicKey, PublicKeySize)
@@ -66,8 +77,8 @@ func (k *PublicKey) UnmarshalText(p []byte) error {
 // We redefined the type so we can implement encoding.TextUnmarshaler.
 type PrivateKey ed25519.PrivateKey
 
-func (k *PrivateKey) String() string {
-	return base64.StdEncoding.EncodeToString(*k)
+func (k PrivateKey) String() string {
+	return base64.StdEncoding.EncodeToString(k)
 }
 
 // UnmarshalJSON implements json.Unmarshaler
@@ -88,7 +99,7 @@ func (k *PrivateKey) UnmarshalText(p []byte) error {
 	}
 
 	if len(data) != PrivateKeySize {
-		return fmt.Errorf("invalid shared key size")
+		return fmt.Errorf("invalid private key size")
 	}
 
 	*k = make(PrivateKey, PrivateKeySize)
@@ -132,7 +143,7 @@ func (k *SecretBoxKey) UnmarshalText(p []byte) error {
 	}
 
 	if len(data) != SecretBoxKeySize {
-		return fmt.Errorf("invalid shared key size")
+		return fmt.Errorf("invalid secret box key size")
 	}
 
 	copy((*k)[:], data)

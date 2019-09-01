@@ -2,7 +2,25 @@ package main
 
 import (
 	"testing"
+
+	"github.com/BurntSushi/toml"
 )
+
+func TestServerConfig(t *testing.T) {
+	const data = `
+ListenAddr = "localhost:7568"
+PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
+`
+
+	var conf serverConfig
+	md, err := toml.Decode(data, &conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(md.Undecoded()); got > 0 {
+		t.Fatal("expected no undecoded keys")
+	}
+}
 
 func TestShiftPath(t *testing.T) {
 	testCases := []struct {

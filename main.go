@@ -15,6 +15,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/vrischmann/hutil/v2"
 	"golang.org/x/crypto/ed25519"
+	"rischmann.fr/apero/internal"
 )
 
 func getNonce() [24]byte {
@@ -120,15 +121,12 @@ func main() {
 
 		switch {
 		case *flDeviceID:
-			var id deviceID
-			if _, err := crypto_rand.Read(id[:]); err != nil {
-				log.Fatal(err)
-			}
+			id := internal.NewDeviceID()
 
 			fmt.Printf("%s\n", id.String())
 
 		case *flServer:
-			var key sharedKey
+			var key internal.SharedKey
 			if _, err := crypto_rand.Read(key[:]); err != nil {
 				log.Fatal(err)
 			}

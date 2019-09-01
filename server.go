@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"log"
 	"net"
@@ -10,22 +9,16 @@ import (
 	"path"
 	"strings"
 
-	"golang.org/x/crypto/ed25519"
+	"rischmann.fr/apero/internal"
 )
 
 type serverConfig struct {
 	ListenAddr string
-	Key        string
+	Key        internal.SharedKey
 }
 
 func (c serverConfig) Validate() error {
 	if _, _, err := net.SplitHostPort(c.ListenAddr); err != nil {
-		return err
-	}
-	if c.Key == "" {
-		return errors.New("shared key is empty")
-	}
-	if _, err := sharedKeyFromString(c.Key); err != nil {
 		return err
 	}
 	return nil
@@ -85,6 +78,8 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	//
+
 	var payload copyRequest
 	if err := json.Unmarshal(data, &payload); err != nil {
 		log.Printf("unable to unmarshal copy request payload. err=%v", err)
@@ -99,9 +94,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 
 	//
 
-	did := deviceIDFromBytes(payload.DeviceID)
-
-	pk, err := s.store.LookupPublicKey(did)
+	pk, err := s.store.LookupPublicKey(payload.DeviceID)
 	switch {
 	case err == errDeviceIDNotFound:
 		log.Printf("device id is not registered. err=%v", err)
@@ -111,7 +104,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		responseStatusCode(w, http.StatusInternalServerError)
 	}
 
-	validSignature := ed25519.Verify(pk, payload.Content, payload.Signature)
+	validSignature := internal.VerifySignature(pk, payload.Content, payload.Signature)
 	if !validSignature {
 		log.Printf("invalid signature for device %s", payload.DeviceID)
 		responseString(w, "invalid signature", http.StatusBadRequest)

@@ -4,23 +4,23 @@ import (
 	"errors"
 	"sync"
 
-	"golang.org/x/crypto/ed25519"
+	"rischmann.fr/apero/internal"
 )
 
 type store struct {
 	mu   sync.Mutex
-	keys map[deviceID]ed25519.PublicKey
+	keys map[internal.DeviceID]internal.PublicKey
 }
 
 func newStore() *store {
 	return &store{
-		keys: make(map[deviceID]ed25519.PublicKey),
+		keys: make(map[internal.DeviceID]internal.PublicKey),
 	}
 }
 
 var errDeviceIDNotFound = errors.New("device id not found")
 
-func (s *store) LookupPublicKey(id deviceID) (ed25519.PublicKey, error) {
+func (s *store) LookupPublicKey(id internal.DeviceID) (internal.PublicKey, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -32,7 +32,7 @@ func (s *store) LookupPublicKey(id deviceID) (ed25519.PublicKey, error) {
 	return k, nil
 }
 
-func (s *store) AddPublicKey(id deviceID, key ed25519.PublicKey) error {
+func (s *store) AddPublicKey(id internal.DeviceID, key internal.PublicKey) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

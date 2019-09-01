@@ -11,8 +11,8 @@ func TestClientConfigUnmarshalTOML(t *testing.T) {
 Endpoint = "http://localhost:7568"
 PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
 EncryptKey = "jHBWWFhacJjEDo60pqvhVHE4rGVK4pOvxlhC8EoRNPw="
-PrivateKey = "fQT3akTsjZkfdg53C9DkDboEJzPXGVFBAJ2TKgXoCpU="
-PublicKey = "7wxfhseys0/UoZMWrOro/Ss019ym4Bw0Qe5RXL1l+/19BPdqROyNmR92DncL0OQNugQnM9cZUUEAnZMqBegKlQ=="
+PrivateKey = "KSfVVKjHAlnMWmh5Xr7fCszINOjRGkGfe3Ykx3atTG97+LLeSFWhcmTUrW+20GKCvGwDQVJWqkmX4+sqiXO5ww=="
+PublicKey = "e/iy3khVoXJk1K1vttBigrxsA0FSVqpJl+PrKolzucM="
 `
 
 	var conf clientConfig

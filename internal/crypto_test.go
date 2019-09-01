@@ -38,35 +38,70 @@ func TestKeyPairString(t *testing.T) {
 	})
 }
 
-func TestPublicKeyUnmarshalText(t *testing.T) {
-	t.Run("normal", func(t *testing.T) {
-		const s = `83DR94DNz/oSND7xrZyRF2C9a18jpyq5tFZ22WUfFuk=`
+func TestKeyPairUnmarshalText(t *testing.T) {
+	pub, priv, err := GenerateKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		var key PublicKey
-		err := (&key).UnmarshalText([]byte(s))
-		if err != nil {
-			t.Fatal(err)
-		}
+	t.Run("public", func(t *testing.T) {
+		t.Run("normal", func(t *testing.T) {
+			s := pub.String()
 
-		if exp, got := s, key.String(); exp != got {
-			t.Fatalf("expected %q, got %q", exp, got)
-		}
+			var key PublicKey
+			err := (&key).UnmarshalText([]byte(s))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if exp, got := s, key.String(); exp != got {
+				t.Fatalf("expected %q, got %q", exp, got)
+			}
+		})
+
+		t.Run("toml", func(t *testing.T) {
+			var obj struct {
+				Key PublicKey
+			}
+
+			md, err := toml.Decode(`Key = "`+pub.String()+`"`, &obj)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := len(md.Undecoded()); got > 0 {
+				t.Fatal("expected no undecoded keys")
+			}
+		})
 	})
 
-	t.Run("toml", func(t *testing.T) {
-		const s = `Key = "83DR94DNz/oSND7xrZyRF2C9a18jpyq5tFZ22WUfFuk="`
+	t.Run("private", func(t *testing.T) {
+		t.Run("normal", func(t *testing.T) {
+			s := priv.String()
 
-		var obj struct {
-			Key PublicKey
-		}
+			var key PrivateKey
+			err := (&key).UnmarshalText([]byte(s))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		md, err := toml.Decode(s, &obj)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got := len(md.Undecoded()); got > 0 {
-			t.Fatal("expected no undecoded keys")
-		}
+			if exp, got := s, key.String(); exp != got {
+				t.Fatalf("expected %q, got %q", exp, got)
+			}
+		})
+
+		t.Run("toml", func(t *testing.T) {
+			var obj struct {
+				Key PrivateKey
+			}
+
+			md, err := toml.Decode(`Key = "`+priv.String()+`"`, &obj)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := len(md.Undecoded()); got > 0 {
+				t.Fatal("expected no undecoded keys")
+			}
+		})
 	})
 }
 

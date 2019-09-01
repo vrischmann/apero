@@ -1,10 +1,30 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"path"
 	"strings"
+
+	"golang.org/x/crypto/ed25519"
 )
+
+type serverConfig struct {
+	Key string
+}
+
+func (c serverConfig) Validate() error {
+	if c.Key == "" {
+		return errors.New("shared key is empty")
+	}
+	if _, err := sharedKeyFromString(c.Key); err != nil {
+		return err
+	}
+	return nil
+}
 
 // shiftPath splits the path into the first component and the rest of
 // the path.
@@ -25,6 +45,11 @@ func shiftPath(p string) (head string, tail string) {
 }
 
 type server struct {
+	store *store
+}
+
+func newServer(conf serverConfig) *server {
+	return &server{}
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -42,10 +67,61 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		responseStatusCode(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		responseStatusCode(w, http.StatusInternalServerError)
+		return
+	}
+
+	var payload copyRequest
+	if err := json.Unmarshal(data, &payload); err != nil {
+		log.Printf("unable to unmarshal copy request payload. err=%v", err)
+		responseString(w, "invalid copy request", http.StatusBadRequest)
+		return
+	}
+	if err := payload.Validate(); err != nil {
+		log.Printf("copy request payload invalid. err=%v", err)
+		responseString(w, "invalid copy request", http.StatusBadRequest)
+		return
+	}
+
+	//
+
+	pk, err := s.store.LookupPublicKey(payload.GetDeviceID())
+	switch {
+	case err == errDeviceIDNotFound:
+		log.Printf("device id is not registered. err=%v", err)
+		responseStatusCode(w, http.StatusNotFound)
+	case err != nil:
+		log.Printf("unable to lookup public key. err=%v", err)
+		responseStatusCode(w, http.StatusInternalServerError)
+	}
+
+	validSignature := ed25519.Verify(pk, payload.Ciphertext, payload.Signature)
+	if !validSignature {
+		log.Printf("invalid signature for device %s", payload.DeviceID)
+		responseString(w, "invalid signature", http.StatusBadRequest)
+		return
+	}
 }
 
 func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) handlePaste(w http.ResponseWriter, req *http.Request) {
+}
+
+func responseStatusCode(w http.ResponseWriter, code int) {
+	w.WriteHeader(code)
+	w.Write([]byte(http.StatusText(code)))
+}
+
+func responseString(w http.ResponseWriter, s string, code int) {
+	w.WriteHeader(code)
+	w.Write([]byte(s))
 }

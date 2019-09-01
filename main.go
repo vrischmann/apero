@@ -2,7 +2,6 @@ package main
 
 import (
 	crypto_rand "crypto/rand"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"io"
@@ -95,19 +94,33 @@ func main() {
 
 	case "genkeys":
 		fs := flag.NewFlagSet("genkeys", flag.ContinueOnError)
-		flServer := fs.Bool("server", true, "Generate the keys for a server")
+		flServer := fs.Bool("server", false, "Generate the keys for a server")
+		flDeviceID := fs.Bool("device-id", false, "Generate a device ID. Useful only for debugging")
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
 			os.Exit(1)
 		}
 
-		if *flServer {
+		switch {
+		case *flDeviceID:
+			var id deviceID
+			if _, err := crypto_rand.Read(id[:]); err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Printf("%s\n", id.String())
+
+		case *flServer:
 			var key sharedKey
 			if _, err := crypto_rand.Read(key[:]); err != nil {
 				log.Fatal(err)
 			}
 
-			fmt.Printf("Key = %q\n", base64.StdEncoding.EncodeToString(key[:]))
+			fmt.Printf("Key = %q\n", key)
+
+		default:
+			fs.Usage()
+			os.Exit(1)
 		}
 	}
 

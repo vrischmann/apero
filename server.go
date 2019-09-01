@@ -81,6 +81,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		responseStatusCode(w, http.StatusInternalServerError)
 		return
 	}
+	defer req.Body.Close()
 
 	//
 
@@ -133,6 +134,7 @@ func (s *server) handleRegister(w http.ResponseWriter, req *http.Request) {
 		responseStatusCode(w, http.StatusInternalServerError)
 		return
 	}
+	defer req.Body.Close()
 
 	var payload registerRequest
 	if err := json.Unmarshal(data, &payload); err != nil {
@@ -148,7 +150,14 @@ func (s *server) handleRegister(w http.ResponseWriter, req *http.Request) {
 
 	//
 
-	log.Printf("payload: %+v", payload)
+	err = s.store.AddPublicKey(payload.DeviceID, payload.PublicKey)
+	if err != nil {
+		log.Printf("unable to add public key to store. err=%v", err)
+		responseStatusCode(w, http.StatusInternalServerError)
+		return
+	}
+
+	responseStatusCode(w, http.StatusCreated)
 }
 
 func responseStatusCode(w http.ResponseWriter, code int) {

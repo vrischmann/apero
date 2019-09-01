@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"rischmann.fr/apero/internal"
 )
 
 func TestServerConfig(t *testing.T) {
@@ -45,4 +48,65 @@ func TestShiftPath(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServerClient(t *testing.T) {
+	var conf serverConfig
+	conf.PSKey = internal.NewSecretBoxKey()
+
+	server := newServer(conf)
+
+	httpServer := httptest.NewServer(server)
+	defer httpServer.Close()
+
+	//
+
+	var clientConf clientConfig
+	clientConf.Endpoint = httpServer.URL
+	clientConf.PSKey = conf.PSKey
+	clientConf.EncryptKey = internal.NewSecretBoxKey()
+	clientConf.PublicKey, clientConf.PrivateKey = mustKeyPair(t)
+
+	client := newClient(clientConf)
+
+	t.Run("register", func(t *testing.T) {
+		req := registerRequest{
+			DeviceID:  internal.NewDeviceID(),
+			PublicKey: clientConf.PublicKey,
+		}
+
+		err := client.doRegister(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify the store
+
+		pk, err := server.store.LookupPublicKey(req.DeviceID)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if exp, got := clientConf.PublicKey, pk; !bytes.Equal(exp, got) {
+			t.Fatalf("expected %q but got %q", exp, got)
+		}
+	})
+
+	t.Run("copy", func(t *testing.T) {
+	})
+
+	t.Run("move", func(t *testing.T) {
+	})
+
+	t.Run("paste", func(t *testing.T) {
+	})
+}
+
+func mustKeyPair(t *testing.T) (internal.PublicKey, internal.PrivateKey) {
+	pub, priv, err := internal.GenerateKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return pub, priv
 }

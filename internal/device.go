@@ -5,6 +5,7 @@ import (
 	crypto_rand "crypto/rand"
 	"encoding"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 )
@@ -38,6 +39,20 @@ func DeviceIDFromBytes(p []byte) DeviceID {
 	copy(id[:], p)
 
 	return id
+}
+
+func (d DeviceID) MarshalJSON() ([]byte, error) {
+	s := base64.StdEncoding.EncodeToString(d[:])
+	return []byte(`"` + s + `"`), nil
+}
+
+func (d *DeviceID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	return d.UnmarshalText([]byte(s))
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler

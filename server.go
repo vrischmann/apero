@@ -14,7 +14,7 @@ import (
 
 type serverConfig struct {
 	ListenAddr string
-	Key        internal.SecretBoxKey
+	PSKey      internal.SecretBoxKey
 }
 
 func (c serverConfig) Validate() error {
@@ -43,11 +43,15 @@ func shiftPath(p string) (head string, tail string) {
 }
 
 type server struct {
+	conf  serverConfig
 	store *store
 }
 
 func newServer(conf serverConfig) *server {
-	return &server{}
+	return &server{
+		conf:  conf,
+		store: newStore(),
+	}
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {

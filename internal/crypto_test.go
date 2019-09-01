@@ -1,26 +1,47 @@
 package internal
 
-import "testing"
+import (
+	"github.com/BurntSushi/toml"
+	"testing"
+)
 
 func TestPublicKeyUnmarshalText(t *testing.T) {
-	const s = `83DR94DNz/oSND7xrZyRF2C9a18jpyq5tFZ22WUfFuk=`
+	t.Run("normal", func(t *testing.T) {
+		const s = `83DR94DNz/oSND7xrZyRF2C9a18jpyq5tFZ22WUfFuk=`
 
-	var key PublicKey
-	err := (&key).UnmarshalText(s)
-	if err != nil {
-		t.Fatal(err)
-	}
+		var key PublicKey
+		err := (&key).UnmarshalText([]byte(s))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if exp, got := s, key.String(); exp != got {
-		t.Fatalf("expected %q, got %q", exp, got)
-	}
+		if exp, got := s, key.String(); exp != got {
+			t.Fatalf("expected %q, got %q", exp, got)
+		}
+	})
+
+	t.Run("toml", func(t *testing.T) {
+		const s = `Key = "83DR94DNz/oSND7xrZyRF2C9a18jpyq5tFZ22WUfFuk="`
+
+		var obj struct {
+			Key PublicKey
+		}
+
+		md, err := toml.Decode(s, &obj)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := len(md.Undecoded()); got > 0 {
+			t.Fatal("expected no undecoded keys")
+		}
+	})
 }
 
 func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 	const s = `WYBwj9jL9VxlaLlbpMPEMU3SJCgwh7fNVqJgSt74K38=`
 
 	var key SecretBoxKey
-	err := (&key).UnmarshalText(s)
+	err := (&key).UnmarshalText([]byte(s))
 	if err != nil {
 		t.Fatal(err)
 	}

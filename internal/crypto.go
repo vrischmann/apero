@@ -2,7 +2,9 @@ package internal
 
 import (
 	crypto_rand "crypto/rand"
+	"encoding"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -18,6 +20,10 @@ const (
 	// PublicKeySize is the size of a public key part of a key pair.
 	// It must always be equal to ed25519.PublicKeySize.
 	PublicKeySize = ed25519.PublicKeySize
+
+	// PrivateKeySize is the size of a private key part of a key pair.
+	// It must always be equal to ed25519.PrivateKeySize.
+	PrivateKeySize = ed25519.PrivateKeySize
 )
 
 // PublicKey is the public key part of a key pair.
@@ -28,8 +34,19 @@ func (k *PublicKey) String() string {
 	return base64.StdEncoding.EncodeToString(*k)
 }
 
-func (k *PublicKey) UnmarshalText(s string) error {
-	data, err := base64.StdEncoding.DecodeString(s)
+// UnmarshalJSON implements json.Unmarshaler
+func (k *PublicKey) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	return k.UnmarshalText([]byte(s))
+}
+
+// UnmarshalTExt implements encoding.TextUnmarshaler
+func (k *PublicKey) UnmarshalText(p []byte) error {
+	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
@@ -39,6 +56,42 @@ func (k *PublicKey) UnmarshalText(s string) error {
 	}
 
 	*k = make(PublicKey, PublicKeySize)
+
+	copy((*k)[:], data)
+
+	return nil
+}
+
+// PrivateKey is the public key part of a key pair.
+// We redefined the type so we can implement encoding.TextUnmarshaler.
+type PrivateKey ed25519.PrivateKey
+
+func (k *PrivateKey) String() string {
+	return base64.StdEncoding.EncodeToString(*k)
+}
+
+// UnmarshalJSON implements json.Unmarshaler
+func (k *PrivateKey) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	return k.UnmarshalText([]byte(s))
+}
+
+// UnmarshalTExt implements encoding.TextUnmarshaler
+func (k *PrivateKey) UnmarshalText(p []byte) error {
+	data, err := base64.StdEncoding.DecodeString(string(p))
+	if err != nil {
+		return err
+	}
+
+	if len(data) != PrivateKeySize {
+		return fmt.Errorf("invalid shared key size")
+	}
+
+	*k = make(PrivateKey, PrivateKeySize)
 
 	copy((*k)[:], data)
 
@@ -64,7 +117,7 @@ func NewSecretBoxKey() SecretBoxKey {
 func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
 	var key SecretBoxKey
 
-	if err := (&key).UnmarshalText(s); err != nil {
+	if err := (&key).UnmarshalText([]byte(s)); err != nil {
 		return nil, err
 	}
 	return &key, nil
@@ -72,8 +125,8 @@ func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 // It assumes the string is base64 encoded.
-func (k *SecretBoxKey) UnmarshalText(s string) error {
-	data, err := base64.StdEncoding.DecodeString(s)
+func (k *SecretBoxKey) UnmarshalText(p []byte) error {
+	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
@@ -95,3 +148,9 @@ func (k SecretBoxKey) String() string {
 func VerifySignature(pk PublicKey, content, signature []byte) bool {
 	return ed25519.Verify(ed25519.PublicKey(pk), content, signature)
 }
+
+var (
+	_ encoding.TextUnmarshaler = (*PublicKey)(nil)
+	_ encoding.TextUnmarshaler = (*PrivateKey)(nil)
+	_ encoding.TextUnmarshaler = (*SecretBoxKey)(nil)
+)

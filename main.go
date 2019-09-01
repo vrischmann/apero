@@ -111,7 +111,7 @@ func main() {
 
 	case "genkeys":
 		fs := flag.NewFlagSet("genkeys", flag.ContinueOnError)
-		flServer := fs.Bool("server", false, "Generate the keys for a server")
+		flSecretBox := fs.Bool("secretbox", false, "Generate a key for a secretbox")
 		flDeviceID := fs.Bool("device-id", false, "Generate a device ID. Useful only for debugging")
 		flKeyPair := fs.Bool("keypair", false, "Generate a ed25519 key pair. Useful only for debugging")
 		if err := fs.Parse(args); err != nil {
@@ -125,11 +125,8 @@ func main() {
 
 			fmt.Printf("%s\n", id.String())
 
-		case *flServer:
-			var key internal.SecretBoxKey
-			if _, err := crypto_rand.Read(key[:]); err != nil {
-				log.Fatal(err)
-			}
+		case *flSecretBox:
+			key := internal.NewSecretBoxKey()
 
 			fmt.Printf("Key = %q\n", key)
 

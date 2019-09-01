@@ -3,7 +3,6 @@ package main
 import (
 	"net/url"
 
-	"golang.org/x/crypto/ed25519"
 	"rischmann.fr/apero/internal"
 )
 
@@ -11,8 +10,8 @@ type clientConfig struct {
 	Endpoint   string
 	Key        internal.SecretBoxKey
 	EncryptKey string
-	PublicKey  ed25519.PublicKey
-	PrivateKey ed25519.PrivateKey
+	PublicKey  internal.PublicKey
+	PrivateKey internal.PrivateKey
 }
 
 func (c clientConfig) Validate() error {

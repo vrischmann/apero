@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	crypto_rand "crypto/rand"
+	"encoding"
 	"encoding/base64"
 	"fmt"
 	"log"
@@ -41,8 +42,8 @@ func DeviceIDFromBytes(p []byte) DeviceID {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 // It assumes the string is base64 encoded.
-func (d *DeviceID) UnmarshalText(s string) error {
-	data, err := base64.StdEncoding.DecodeString(s)
+func (d *DeviceID) UnmarshalText(p []byte) error {
+	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
@@ -63,3 +64,5 @@ func (d DeviceID) String() string {
 func (d DeviceID) IsValid() bool {
 	return !bytes.Equal(d[:], deviceIDAllZeroes[:])
 }
+
+var _ encoding.TextUnmarshaler = (*DeviceID)(nil)

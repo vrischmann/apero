@@ -4,16 +4,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"rischmann.fr/apero/internal"
 )
 
 type clientConfig struct {
 	Endpoint       string
-	PSKey          internal.SecretBoxKey
-	EncryptKey     internal.SecretBoxKey
-	SignPublicKey  internal.PublicKey
-	SignPrivateKey internal.PrivateKey
+	PSKey          secretBoxKey
+	EncryptKey     secretBoxKey
+	SignPublicKey  publicKey
+	SignPrivateKey privateKey
 }
 
 func (c clientConfig) Validate() error {

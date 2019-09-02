@@ -9,14 +9,12 @@ import (
 	"net/http"
 	"path"
 	"strings"
-
-	"rischmann.fr/apero/internal"
 )
 
 type serverConfig struct {
 	ListenAddr    string
-	PSKey         internal.SecretBoxKey
-	SignPublicKey internal.PublicKey
+	PSKey         secretBoxKey
+	SignPublicKey publicKey
 }
 
 func (c serverConfig) Validate() error {
@@ -87,7 +85,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	data, ok := internal.SecretBoxOpen(data, s.conf.PSKey)
+	data, ok := secretBoxOpen(data, s.conf.PSKey)
 	if !ok {
 		log.Printf("unable to open box")
 		responseStatusCode(w, http.StatusBadRequest)
@@ -110,7 +108,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 
 	//
 
-	validSignature := internal.VerifySignature(s.conf.SignPublicKey, payload.Content, payload.Signature)
+	validSignature := verify(s.conf.SignPublicKey, payload.Content, payload.Signature)
 	if !validSignature {
 		log.Printf("invalid signature")
 		responseString(w, "invalid signature", http.StatusBadRequest)

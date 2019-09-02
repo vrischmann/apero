@@ -11,7 +11,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/vrischmann/hutil/v2"
-	"rischmann.fr/apero/internal"
 )
 
 func readStdin() string {
@@ -107,12 +106,12 @@ func main() {
 
 		switch {
 		case *flSecretBox:
-			key := internal.NewSecretBoxKey()
+			key := newSecretBoxKey()
 
 			fmt.Printf("Key = %q\n", key)
 
 		case *flKeyPair:
-			publicKey, privateKey, err := internal.GenerateKeyPair()
+			publicKey, privateKey, err := generateKeyPair()
 			if err != nil {
 				log.Fatal(err)
 			}

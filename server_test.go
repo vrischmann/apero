@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
-	"rischmann.fr/apero/internal"
 )
 
 func TestServerConfigUnmarshalText(t *testing.T) {
@@ -57,7 +56,7 @@ func TestServerClient(t *testing.T) {
 	publicKey, privateKey := mustKeyPair(t)
 
 	var conf serverConfig
-	conf.PSKey = internal.NewSecretBoxKey()
+	conf.PSKey = newSecretBoxKey()
 	conf.SignPublicKey = publicKey
 
 	server := newServer(conf)
@@ -70,7 +69,7 @@ func TestServerClient(t *testing.T) {
 	var clientConf clientConfig
 	clientConf.Endpoint = httpServer.URL
 	clientConf.PSKey = conf.PSKey
-	clientConf.EncryptKey = internal.NewSecretBoxKey()
+	clientConf.EncryptKey = newSecretBoxKey()
 	clientConf.SignPublicKey = publicKey
 	clientConf.SignPrivateKey = privateKey
 
@@ -79,7 +78,7 @@ func TestServerClient(t *testing.T) {
 
 	t.Run("copy", func(t *testing.T) {
 		content := []byte("hello")
-		signature := internal.Sign(clientConf.SignPrivateKey, content)
+		signature := sign(clientConf.SignPrivateKey, content)
 
 		req := copyRequest{
 			Signature: signature,
@@ -99,8 +98,8 @@ func TestServerClient(t *testing.T) {
 	})
 }
 
-func mustKeyPair(t *testing.T) (internal.PublicKey, internal.PrivateKey) {
-	pub, priv, err := internal.GenerateKeyPair()
+func mustKeyPair(t *testing.T) (publicKey, privateKey) {
+	pub, priv, err := generateKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"bytes"
@@ -9,13 +9,13 @@ import (
 )
 
 func TestKeyPairString(t *testing.T) {
-	pub, priv, err := GenerateKeyPair()
+	pub, priv, err := generateKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("public", func(t *testing.T) {
-		var k PublicKey
+		var k publicKey
 		err := (&k).UnmarshalText([]byte(pub.String()))
 		if err != nil {
 			t.Fatal(err)
@@ -27,7 +27,7 @@ func TestKeyPairString(t *testing.T) {
 	})
 
 	t.Run("private", func(t *testing.T) {
-		var k PrivateKey
+		var k privateKey
 		err := (&k).UnmarshalText([]byte(priv.String()))
 		if err != nil {
 			t.Fatal(err)
@@ -40,13 +40,13 @@ func TestKeyPairString(t *testing.T) {
 }
 
 func TestPublicKeyUnmarshalJSON(t *testing.T) {
-	pub, _, err := GenerateKeyPair()
+	pub, _, err := generateKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var obj struct {
-		Key PublicKey
+		Key publicKey
 	}
 	obj.Key = pub
 
@@ -56,7 +56,7 @@ func TestPublicKeyUnmarshalJSON(t *testing.T) {
 	}
 
 	var obj2 struct {
-		Key PublicKey
+		Key publicKey
 	}
 	err = json.Unmarshal(data, &obj2)
 	if err != nil {
@@ -69,7 +69,7 @@ func TestPublicKeyUnmarshalJSON(t *testing.T) {
 }
 
 func TestKeyPairUnmarshalText(t *testing.T) {
-	pub, priv, err := GenerateKeyPair()
+	pub, priv, err := generateKeyPair()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 		t.Run("normal", func(t *testing.T) {
 			s := pub.String()
 
-			var key PublicKey
+			var key publicKey
 			err := (&key).UnmarshalText([]byte(s))
 			if err != nil {
 				t.Fatal(err)
@@ -91,7 +91,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 
 		t.Run("toml", func(t *testing.T) {
 			var obj struct {
-				Key PublicKey
+				Key publicKey
 			}
 
 			md, err := toml.Decode(`Key = "`+pub.String()+`"`, &obj)
@@ -111,7 +111,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 		t.Run("normal", func(t *testing.T) {
 			s := priv.String()
 
-			var key PrivateKey
+			var key privateKey
 			err := (&key).UnmarshalText([]byte(s))
 			if err != nil {
 				t.Fatal(err)
@@ -124,7 +124,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 
 		t.Run("toml", func(t *testing.T) {
 			var obj struct {
-				Key PrivateKey
+				Key privateKey
 			}
 
 			md, err := toml.Decode(`Key = "`+priv.String()+`"`, &obj)
@@ -141,7 +141,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 	const s = `WYBwj9jL9VxlaLlbpMPEMU3SJCgwh7fNVqJgSt74K38=`
 
-	var key SecretBoxKey
+	var key secretBoxKey
 	err := (&key).UnmarshalText([]byte(s))
 	if err != nil {
 		t.Fatal(err)
@@ -153,12 +153,12 @@ func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 }
 
 func TestSecretBox(t *testing.T) {
-	k := NewSecretBoxKey()
+	k := newSecretBoxKey()
 
 	data := []byte("foobar")
 
-	box := SecretBoxSeal(data, k)
-	decrypted, ok := SecretBoxOpen(box, k)
+	box := secretBoxSeal(data, k)
+	decrypted, ok := secretBoxOpen(box, k)
 	if !ok {
 		t.Fatal("expected to open the box")
 	}

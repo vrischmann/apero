@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	crypto_rand "crypto/rand"
@@ -14,45 +14,45 @@ import (
 )
 
 const (
-	// SecretBoxKeySize is the size of the key shared between server
+	// secretBoxKeySize is the size of the key shared between server
 	// and clients. It must be equal to what is used by secretbox.
 	// See https://godoc.org/golang.org/x/crypto/nacl/secretbox#Seal.
-	SecretBoxKeySize = 32
+	secretBoxKeySize = 32
 
-	// PublicKeySize is the size of a public key part of a key pair.
-	// It must always be equal to ed25519.PublicKeySize.
-	PublicKeySize = ed25519.PublicKeySize
+	// publicKeySize is the size of a public key part of a key pair.
+	// It must always be equal to ed25519.publicKeySize.
+	publicKeySize = ed25519.PublicKeySize
 
-	// PrivateKeySize is the size of a private key part of a key pair.
-	// It must always be equal to ed25519.PrivateKeySize.
-	PrivateKeySize = ed25519.PrivateKeySize
+	// privateKeySize is the size of a private key part of a key pair.
+	// It must always be equal to ed25519.privateKeySize.
+	privateKeySize = ed25519.PrivateKeySize
 )
 
-// GenerateKeyPair generates a public/private key pair.
+// generateKeyPair generates a public/private key pair.
 // It uses ed25519 under the hood.
-func GenerateKeyPair() (PublicKey, PrivateKey, error) {
-	publicKey, privateKey, err := ed25519.GenerateKey(crypto_rand.Reader)
+func generateKeyPair() (publicKey, privateKey, error) {
+	pub, priv, err := ed25519.GenerateKey(crypto_rand.Reader)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return PublicKey(publicKey), PrivateKey(privateKey), nil
+	return publicKey(pub), privateKey(priv), nil
 }
 
-// PublicKey is the public key part of a key pair.
+// publicKey is the public key part of a key pair.
 // We redefined the type so we can implement encoding.TextUnmarshaler.
-type PublicKey ed25519.PublicKey
+type publicKey ed25519.PublicKey
 
-func (k PublicKey) String() string {
+func (k publicKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
 }
 
-func (k PublicKey) IsValid() bool {
-	return len(k) == PublicKeySize
+func (k publicKey) IsValid() bool {
+	return len(k) == publicKeySize
 }
 
 // UnmarshalJSON implements json.Unmarshaler
-func (k *PublicKey) UnmarshalJSON(data []byte) error {
+func (k *publicKey) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
@@ -62,71 +62,71 @@ func (k *PublicKey) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalTExt implements encoding.TextUnmarshaler
-func (k *PublicKey) UnmarshalText(p []byte) error {
+func (k *publicKey) UnmarshalText(p []byte) error {
 	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
 
-	if len(data) != PublicKeySize {
+	if len(data) != publicKeySize {
 		return fmt.Errorf("invalid public key size")
 	}
 
-	*k = make(PublicKey, PublicKeySize)
+	*k = make(publicKey, publicKeySize)
 
 	copy((*k)[:], data)
 
 	return nil
 }
 
-// PrivateKey is the public key part of a key pair.
+// privateKey is the public key part of a key pair.
 // We redefined the type so we can implement encoding.TextUnmarshaler.
-type PrivateKey ed25519.PrivateKey
+type privateKey ed25519.PrivateKey
 
-func (k PrivateKey) String() string {
+func (k privateKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
 }
 
-func (k PrivateKey) IsValid() bool {
-	return len(k) == PrivateKeySize
+func (k privateKey) IsValid() bool {
+	return len(k) == privateKeySize
 }
 
 // UnmarshalTExt implements encoding.TextUnmarshaler
-func (k *PrivateKey) UnmarshalText(p []byte) error {
+func (k *privateKey) UnmarshalText(p []byte) error {
 	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
 
-	if len(data) != PrivateKeySize {
+	if len(data) != privateKeySize {
 		return fmt.Errorf("invalid private key size")
 	}
 
-	*k = make(PrivateKey, PrivateKeySize)
+	*k = make(privateKey, privateKeySize)
 
 	copy((*k)[:], data)
 
 	return nil
 }
 
-// SecretBoxKey is the key shared between server and clients
+// secretBoxKey is the key shared between server and clients
 // to encrypt and authenticate messages.
 //
 // It is _not_ used to
-type SecretBoxKey [SecretBoxKeySize]byte
+type secretBoxKey [secretBoxKeySize]byte
 
-// NewSecretBoxKey creates a new, random device id.
-func NewSecretBoxKey() SecretBoxKey {
-	var id SecretBoxKey
+// newSecretBoxKey creates a new, random device id.
+func newSecretBoxKey() secretBoxKey {
+	var id secretBoxKey
 	if _, err := crypto_rand.Read(id[:]); err != nil {
 		log.Fatalf("unable to read random data. err=%v", err)
 	}
 	return id
 }
 
-// SecretBoxKeyFromString parses a string as a shared key.
-func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
-	var key SecretBoxKey
+// secretBoxKeyFromString parses a string as a shared key.
+func secretBoxKeyFromString(s string) (*secretBoxKey, error) {
+	var key secretBoxKey
 
 	if err := (&key).UnmarshalText([]byte(s)); err != nil {
 		return nil, err
@@ -134,19 +134,19 @@ func SecretBoxKeyFromString(s string) (*SecretBoxKey, error) {
 	return &key, nil
 }
 
-func (k SecretBoxKey) IsValid() bool {
-	return len(k) == SecretBoxKeySize
+func (k secretBoxKey) IsValid() bool {
+	return len(k) == secretBoxKeySize
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler
 // It assumes the string is base64 encoded.
-func (k *SecretBoxKey) UnmarshalText(p []byte) error {
+func (k *secretBoxKey) UnmarshalText(p []byte) error {
 	data, err := base64.StdEncoding.DecodeString(string(p))
 	if err != nil {
 		return err
 	}
 
-	if len(data) != SecretBoxKeySize {
+	if len(data) != secretBoxKeySize {
 		return fmt.Errorf("invalid secret box key size")
 	}
 
@@ -156,18 +156,18 @@ func (k *SecretBoxKey) UnmarshalText(p []byte) error {
 }
 
 // String returns the key as a base64 encoded string.
-func (k SecretBoxKey) String() string {
+func (k secretBoxKey) String() string {
 	return base64.StdEncoding.EncodeToString(k[:])
 }
 
-func SecretBoxSeal(data []byte, key SecretBoxKey) []byte {
+func secretBoxSeal(data []byte, key secretBoxKey) []byte {
 	nonce := getNonce()
 	encrypted := secretbox.Seal(nonce[:], data, &nonce, (*[32]byte)(&key))
 
 	return encrypted
 }
 
-func SecretBoxOpen(box []byte, key SecretBoxKey) ([]byte, bool) {
+func secretBoxOpen(box []byte, key secretBoxKey) ([]byte, bool) {
 	var nonce [24]byte
 	copy(nonce[:], box[:24])
 
@@ -185,16 +185,16 @@ func getNonce() [24]byte {
 	return nonce
 }
 
-func Sign(priv PrivateKey, content []byte) []byte {
+func sign(priv privateKey, content []byte) []byte {
 	return ed25519.Sign(ed25519.PrivateKey(priv), content)
 }
 
-func VerifySignature(pk PublicKey, content, signature []byte) bool {
+func verify(pk publicKey, content, signature []byte) bool {
 	return ed25519.Verify(ed25519.PublicKey(pk), content, signature)
 }
 
 var (
-	_ encoding.TextUnmarshaler = (*PublicKey)(nil)
-	_ encoding.TextUnmarshaler = (*PrivateKey)(nil)
-	_ encoding.TextUnmarshaler = (*SecretBoxKey)(nil)
+	_ encoding.TextUnmarshaler = (*publicKey)(nil)
+	_ encoding.TextUnmarshaler = (*privateKey)(nil)
+	_ encoding.TextUnmarshaler = (*secretBoxKey)(nil)
 )

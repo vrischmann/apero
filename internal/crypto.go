@@ -185,6 +185,10 @@ func getNonce() [24]byte {
 	return nonce
 }
 
+func Sign(priv PrivateKey, content []byte) []byte {
+	return ed25519.Sign(ed25519.PrivateKey(priv), content)
+}
+
 func VerifySignature(pk PublicKey, content, signature []byte) bool {
 	return ed25519.Verify(ed25519.PublicKey(pk), content, signature)
 }

@@ -99,7 +99,6 @@ func main() {
 	case "genkeys":
 		fs := flag.NewFlagSet("genkeys", flag.ContinueOnError)
 		flSecretBox := fs.Bool("secretbox", false, "Generate a key for a secretbox")
-		flDeviceID := fs.Bool("device-id", false, "Generate a device ID. Useful only for debugging")
 		flKeyPair := fs.Bool("keypair", false, "Generate a ed25519 key pair. Useful only for debugging")
 		if err := fs.Parse(args); err != nil {
 			fs.Usage()
@@ -107,11 +106,6 @@ func main() {
 		}
 
 		switch {
-		case *flDeviceID:
-			id := internal.NewDeviceID()
-
-			fmt.Printf("%s\n", id.String())
-
 		case *flSecretBox:
 			key := internal.NewSecretBoxKey()
 

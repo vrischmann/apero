@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"golang.org/x/crypto/ed25519"
-	"rischmann.fr/apero/internal"
 )
 
 // copyRequest is a request to copy content into the staging
@@ -17,7 +16,6 @@ import (
 //
 // The content must not be empty but there's no other constraint otherwise.
 type copyRequest struct {
-	DeviceID  internal.DeviceID
 	Signature []byte
 	Content   []byte
 }
@@ -30,14 +28,5 @@ func (r copyRequest) Validate() error {
 	if len(r.Content) == 0 {
 		return fmt.Errorf("Content is empty")
 	}
-	return nil
-}
-
-type registerRequest struct {
-	DeviceID  internal.DeviceID
-	PublicKey internal.PublicKey
-}
-
-func (r registerRequest) Validate() error {
 	return nil
 }

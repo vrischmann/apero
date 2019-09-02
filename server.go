@@ -87,6 +87,13 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
+	data, ok := internal.SecretBoxOpen(data, s.conf.PSKey)
+	if !ok {
+		log.Printf("unable to open box")
+		responseStatusCode(w, http.StatusBadRequest)
+		return
+	}
+
 	//
 
 	var payload copyRequest
@@ -105,7 +112,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 
 	validSignature := internal.VerifySignature(s.conf.SignPublicKey, payload.Content, payload.Signature)
 	if !validSignature {
-		log.Printf("invalid signature for device %s", payload.DeviceID)
+		log.Printf("invalid signature")
 		responseString(w, "invalid signature", http.StatusBadRequest)
 		return
 	}

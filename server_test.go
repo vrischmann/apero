@@ -78,6 +78,18 @@ func TestServerClient(t *testing.T) {
 	_ = client
 
 	t.Run("copy", func(t *testing.T) {
+		content := []byte("hello")
+		signature := internal.Sign(clientConf.SignPrivateKey, content)
+
+		req := copyRequest{
+			Signature: signature,
+			Content:   content,
+		}
+
+		err := client.doCopy(req)
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	t.Run("move", func(t *testing.T) {

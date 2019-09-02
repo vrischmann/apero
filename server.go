@@ -114,6 +114,14 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		responseString(w, "invalid signature", http.StatusBadRequest)
 		return
 	}
+
+	// TODO(vincent): store this shit
+
+	// TODO(vincent): temporary for testing
+	respData := secretBoxSeal([]byte("OK"), s.conf.PSKey)
+
+	w.WriteHeader(http.StatusAccepted)
+	w.Write(respData)
 }
 
 func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {

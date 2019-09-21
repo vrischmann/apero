@@ -48,13 +48,15 @@ func (c *client) doCopy(req copyRequest) error {
 		return err
 	}
 
+	ciphertext := secretBoxSeal(data, c.conf.PSKey)
 
 	//
 
-	hreq, err := http.NewRequest(http.MethodPost, c.makeURL("/copy"), bytes.NewReader(data))
+	hreq, err := http.NewRequest(http.MethodPost, c.makeURL("/copy"), bytes.NewReader(ciphertext))
 	if err != nil {
 		return err
 	}
+	hreq.Header.Set("Content-Type", "application/octet-stream")
 
 	resp, err := c.httpClient.Do(hreq)
 	if err != nil {

@@ -97,6 +97,8 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	log.Printf("payload: %s", string(payload.Content))
+
 	// TODO(vincent): store this shit
 
 	// TODO(vincent): temporary for testing

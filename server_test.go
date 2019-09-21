@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestServerClient(t *testing.T) {
 	conf.PSKey = newSecretBoxKey()
 	conf.SignPublicKey = publicKey
 
-	server := newServer(conf)
+	server := newServer(conf, newMemStore())
 
 	httpServer := httptest.NewServer(server)
 	defer httpServer.Close()
@@ -63,6 +64,23 @@ func TestServerClient(t *testing.T) {
 		err := client.doCopy(req)
 		if err != nil {
 			t.Fatal(err)
+		}
+
+		entries, err := server.st.ListAll()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 1 {
+			t.Fatalf("expected one entry in the store, got %d", len(entries))
+		}
+
+		entry, err := server.st.Pop()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if exp, got := content, entry; !bytes.Equal(exp, got) {
+			t.Fatalf("expected entry to be %s, got %s", string(exp), string(got))
 		}
 	})
 

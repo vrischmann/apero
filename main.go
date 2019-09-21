@@ -86,7 +86,8 @@ func main() {
 
 		//
 
-		server := newServer(conf)
+		// TODO(vincent): configure this based on conf
+		server := newServer(conf, newMemStore())
 
 		var chain hutil.Chain
 		chain.Use(hutil.NewLoggingMiddleware(func(req *http.Request, statusCode int, responseSize int, elapsed time.Duration) {

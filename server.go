@@ -32,11 +32,13 @@ func (c serverConfig) Validate() error {
 
 type server struct {
 	conf serverConfig
+	st   store
 }
 
-func newServer(conf serverConfig) *server {
+func newServer(conf serverConfig, st store) *server {
 	return &server{
 		conf: conf,
+		st:   st,
 	}
 }
 
@@ -99,10 +101,19 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 
 	log.Printf("payload: %s", string(payload.Content))
 
-	// TODO(vincent): store this shit
+	// TODO(vincent): size limits and stuff
+
+	id, err := s.st.Add(payload.Content)
+	if err != nil {
+		log.Printf("unable to store payload. err=%v", err)
+		responseString(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("stored payload with id: %s", id)
 
 	// TODO(vincent): temporary for testing
-	respData := secretBoxSeal([]byte("OK"), s.conf.PSKey)
+	respData := secretBoxSeal(id[:], s.conf.PSKey)
 
 	w.WriteHeader(http.StatusAccepted)
 	w.Write(respData)

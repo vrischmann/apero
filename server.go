@@ -7,8 +7,8 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"path"
-	"strings"
+
+	"github.com/vrischmann/hutil/v2"
 )
 
 type serverConfig struct {
@@ -30,24 +30,6 @@ func (c serverConfig) Validate() error {
 	return nil
 }
 
-// shiftPath splits the path into the first component and the rest of
-// the path.
-// The returned head will never have a slash in it, if the path has no tail
-// head will be empty.
-// The tail will never have a trailing slash.
-func shiftPath(p string) (head string, tail string) {
-	p = path.Clean("/" + p)
-
-	pos := strings.Index(p[1:], "/")
-	if pos == -1 {
-		return p[1:], "/"
-	}
-
-	p = p[1:]
-
-	return p[:pos], p[pos:]
-}
-
 type server struct {
 	conf serverConfig
 }
@@ -59,7 +41,7 @@ func newServer(conf serverConfig) *server {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	head, _ := shiftPath(req.URL.Path)
+	head, _ := hutil.ShiftPath(req.URL.Path)
 	switch head {
 	case "copy":
 		s.handleCopy(w, req)

@@ -6,11 +6,9 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-// copyRequest is a request to copy content into the staging
-// area of the server.
+// copyRequest is a request to copy content to the server.
 //
-// A copy request must be identified by a device id and signed
-// by the public key for this device id.
+// A copy request must be signed by the client public key.
 // This means that before attempting a copy a client must register
 // its device.
 //

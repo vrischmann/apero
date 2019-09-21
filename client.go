@@ -48,7 +48,6 @@ func (c *client) doCopy(req copyRequest) error {
 		return err
 	}
 
-	data = secretBoxSeal(data, c.conf.PSKey)
 
 	//
 

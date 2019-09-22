@@ -89,7 +89,7 @@ func runCopy(args []string) error {
 		Content:   ciphertext,
 	}
 
-	body, err := client.doRequest(req, "/copy")
+	body, err := client.doCopy(req)
 	if err != nil {
 		return err
 	}
@@ -120,16 +120,27 @@ func doRunMoveOrPaste(args []string, action string) error {
 		}
 	}
 
-	req := moveOrPasteRequest{
-		ID:        id,
-		Signature: sign(conf.SignPrivateKey, id[:]),
-	}
-
 	//
 
 	client := newClient(conf)
 
-	body, err := client.doRequest(req, action)
+	var (
+		body []byte
+		err  error
+	)
+
+	switch action {
+	case "/move":
+		body, err = client.doMove(moveRequest{
+			ID:        id,
+			Signature: sign(conf.SignPrivateKey, id[:]),
+		})
+	case "/paste":
+		body, err = client.doPaste(pasteRequest{
+			ID:        id,
+			Signature: sign(conf.SignPrivateKey, id[:]),
+		})
+	}
 	if err != nil {
 		return err
 	}

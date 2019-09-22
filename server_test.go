@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestServerClient(t *testing.T) {
 		signature := sign(clientConf.SignPrivateKey, content)
 		req := copyRequest{Signature: signature, Content: content}
 
-		body, err := client.doRequest(req, "/copy")
+		body, err := client.doCopy(req)
 		require.NoError(t, err)
 
 		//
@@ -75,10 +76,10 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		var req moveOrPasteRequest
+		var req moveRequest
 		req.Signature = sign(clientConf.SignPrivateKey, req.ID[:])
 
-		body, err := client.doRequest(req, "/move")
+		body, err := client.doMove(req)
 		require.NoError(t, err)
 		require.Equal(t, []byte("yoo"), body)
 
@@ -90,20 +91,17 @@ func TestServerClient(t *testing.T) {
 	})
 
 	t.Run("move-specific", func(t *testing.T) {
-		oldestID, err := server.st.Add([]byte("yoo"))
-		require.NoError(t, err)
-		id, err := server.st.Add([]byte("yezi"))
-		require.NoError(t, err)
-		require.False(t, isEmptyULID(id))
+		oldestID, _ := server.st.Add([]byte("yoo"))
+		id, _ := server.st.Add([]byte("yezi"))
 
 		//
 
-		req := moveOrPasteRequest{
+		req := moveRequest{
 			ID:        id,
 			Signature: sign(clientConf.SignPrivateKey, id[:]),
 		}
 
-		body, err := client.doRequest(req, "/move")
+		body, err := client.doMove(req)
 		require.NoError(t, err)
 		require.Equal(t, []byte("yezi"), body)
 
@@ -117,15 +115,14 @@ func TestServerClient(t *testing.T) {
 	})
 
 	t.Run("paste-oldest", func(t *testing.T) {
-		id, err := server.st.Add([]byte("yoo"))
-		require.NoError(t, err)
+		id, _ := server.st.Add([]byte("yoo"))
 
 		//
 
-		var req moveOrPasteRequest
+		var req pasteRequest
 		req.Signature = sign(clientConf.SignPrivateKey, req.ID[:])
 
-		body, err := client.doRequest(req, "/paste")
+		body, err := client.doPaste(req)
 		require.NoError(t, err)
 		require.Equal(t, []byte("yoo"), body)
 
@@ -140,19 +137,17 @@ func TestServerClient(t *testing.T) {
 	})
 
 	t.Run("paste-specific", func(t *testing.T) {
-		oldestID, err := server.st.Add([]byte("yoo"))
-		require.NoError(t, err)
-		id, err := server.st.Add([]byte("yeoa"))
-		require.NoError(t, err)
+		oldestID, _ := server.st.Add([]byte("yoo"))
+		id, _ := server.st.Add([]byte("yeoa"))
 
 		//
 
-		req := moveOrPasteRequest{
+		req := pasteRequest{
 			ID:        id,
 			Signature: sign(clientConf.SignPrivateKey, id[:]),
 		}
 
-		body, err := client.doRequest(req, "/paste")
+		body, err := client.doPaste(req)
 		require.NoError(t, err)
 		require.Equal(t, []byte("yeoa"), body)
 
@@ -164,6 +159,30 @@ func TestServerClient(t *testing.T) {
 		require.Equal(t, oldestID, entries[0])
 		require.Equal(t, id, entries[1])
 
+		server.st.RemoveFirst() // cleanup for the next test
+		server.st.RemoveFirst()
+	})
+
+	t.Run("list", func(t *testing.T) {
+		id1, _ := server.st.Add([]byte("foo1"))
+		id2, _ := server.st.Add([]byte("foo2"))
+		id3, _ := server.st.Add([]byte("foo3"))
+
+		//
+
+		req := listRequest{Signature: sign(clientConf.SignPrivateKey, []byte("L"))}
+
+		body, err := client.doList(req)
+		require.NoError(t, err)
+
+		var resp listResponse
+		err = json.Unmarshal(body, &resp)
+		require.NoError(t, err)
+
+		require.Equal(t, 3, len(resp.Entries))
+		require.Equal(t, id1, resp.Entries[0])
+		require.Equal(t, id2, resp.Entries[1])
+		require.Equal(t, id3, resp.Entries[2])
 	})
 }
 

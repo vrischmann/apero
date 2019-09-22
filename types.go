@@ -30,15 +30,44 @@ func (r copyRequest) Validate() error {
 	return nil
 }
 
-type moveOrPasteRequest struct {
+type moveRequest struct {
 	Signature []byte
 	ID        ulid.ULID
 }
 
 // Validate validates the request parameters.
-func (r moveOrPasteRequest) Validate() error {
+func (r moveRequest) Validate() error {
 	if len(r.Signature) != ed25519.SignatureSize {
 		return fmt.Errorf("Signature size is invalid")
 	}
 	return nil
+}
+
+type pasteRequest struct {
+	Signature []byte
+	ID        ulid.ULID
+}
+
+// Validate validates the request parameters.
+func (r pasteRequest) Validate() error {
+	if len(r.Signature) != ed25519.SignatureSize {
+		return fmt.Errorf("Signature size is invalid")
+	}
+	return nil
+}
+
+type listRequest struct {
+	Signature []byte
+}
+
+// Validate validates the request parameters.
+func (r listRequest) Validate() error {
+	if len(r.Signature) != ed25519.SignatureSize {
+		return fmt.Errorf("Signature size is invalid")
+	}
+	return nil
+}
+
+type listResponse struct {
+	Entries []ulid.ULID
 }

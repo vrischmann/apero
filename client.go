@@ -49,7 +49,20 @@ func (c *client) makeURL(path string) string {
 	return c.conf.Endpoint + path
 }
 
-func (c *client) doRequest(req interface{}, path string) ([]byte, error) {
+func (c *client) doCopy(req copyRequest) ([]byte, error) {
+	return c.doRequest(req, http.MethodPost, http.StatusAccepted, "/copy")
+}
+func (c *client) doMove(req moveRequest) ([]byte, error) {
+	return c.doRequest(req, http.MethodDelete, http.StatusOK, "/move")
+}
+func (c *client) doPaste(req pasteRequest) ([]byte, error) {
+	return c.doRequest(req, http.MethodGet, http.StatusOK, "/paste")
+}
+func (c *client) doList(req listRequest) ([]byte, error) {
+	return c.doRequest(req, http.MethodGet, http.StatusOK, "/list")
+}
+
+func (c *client) doRequest(req interface{}, method string, expCode int, path string) ([]byte, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -59,7 +72,7 @@ func (c *client) doRequest(req interface{}, path string) ([]byte, error) {
 
 	//
 
-	hreq, err := http.NewRequest(http.MethodPost, c.makeURL(path), bytes.NewReader(ciphertext))
+	hreq, err := http.NewRequest(method, c.makeURL(path), bytes.NewReader(ciphertext))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +85,7 @@ func (c *client) doRequest(req interface{}, path string) ([]byte, error) {
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	if resp.StatusCode != http.StatusAccepted {
+	if resp.StatusCode != expCode {
 		return nil, fmt.Errorf("invalid status code %s. body=%q", resp.Status, maybeReadHTTPResponseBody(resp))
 	}
 

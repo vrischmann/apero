@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/oklog/ulid/v2"
 	"github.com/peterbourgon/ff"
 	"github.com/peterbourgon/ff/ffcli"
 	"github.com/vrischmann/hutil/v2"
@@ -25,13 +27,12 @@ func readStdin() string {
 }
 
 var (
-	globalFlags = flag.NewFlagSet("apero", flag.ExitOnError)
+	globalFlags  = flag.NewFlagSet("apero", flag.ExitOnError)
+	globalConfig = globalFlags.String("config", os.Getenv("HOME")+"/.apero.toml", "Configuration file to use")
 
 	copyFlags  = flag.NewFlagSet("copy", flag.ExitOnError)
-	copyConfig = copyFlags.String("config", os.Getenv("HOME")+"/.apero.toml", "Configuration file to use")
-
-	serveFlags  = flag.NewFlagSet("serve", flag.ExitOnError)
-	serveConfig = serveFlags.String("config", os.Getenv("HOME")+"/.apero.toml", "Configuration file to use")
+	moveFlags  = flag.NewFlagSet("move", flag.ExitOnError)
+	serveFlags = flag.NewFlagSet("serve", flag.ExitOnError)
 
 	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
 	genconfigClientConfig = genconfigFlags.String("client-config", "client.toml", "File path for the client config")
@@ -40,21 +41,110 @@ var (
 
 func runCopy(args []string) error {
 	var conf clientConfig
-	if _, err := toml.DecodeFile(*copyConfig, &conf); err != nil {
+	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
 		return err
 	}
 	if err := conf.Validate(); err != nil {
 		return err
 	}
 
-	// TODO(vincent): write me
+	if len(args) < 1 {
+		return errors.New("need at least one path to copy")
+	}
+
+	var (
+		data []byte
+		err  error
+	)
+	switch {
+	case args[0] == "-":
+		data, err = ioutil.ReadAll(os.Stdin)
+	default:
+		data, err = ioutil.ReadFile(args[0])
+	}
+	if err != nil {
+		return err
+	}
+
+	//
+
+	ciphertext := secretBoxSeal(data, conf.EncryptKey)
+	signature := sign(conf.SignPrivateKey, ciphertext)
+
+	//
+
+	client := newClient(conf)
+
+	req := copyRequest{
+		Signature: signature,
+		Content:   ciphertext,
+	}
+
+	body, err := client.doRequest(req, "/copy")
+	if err != nil {
+		return err
+	}
+
+	var id ulid.ULID
+	copy(id[:], body)
+
+	fmt.Printf("id: %s\n", id)
+
+	return nil
+}
+
+func runMove(args []string) error {
+	var conf clientConfig
+	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
+		return err
+	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	var id ulid.ULID
+	if len(args) > 0 {
+		var err error
+		id, err = ulid.Parse(args[0])
+		if err != nil {
+			return err
+		}
+	}
+	// TODO(vincent): implement specific move
+	_ = id
+
+	//
+
+	signature := sign(conf.SignPrivateKey, []byte("M"))
+
+	//
+
+	client := newClient(conf)
+
+	req := moveRequest{Signature: signature}
+
+	body, err := client.doRequest(req, "/move")
+	if err != nil {
+		return err
+	}
+
+	if len(body) == 0 {
+		return nil
+	}
+
+	plaintext, ok := secretBoxOpen(body, conf.EncryptKey)
+	if !ok {
+		return fmt.Errorf("unable to decipher content")
+	}
+
+	os.Stdout.Write(plaintext)
 
 	return nil
 }
 
 func runServe(args []string) error {
 	var conf serverConfig
-	if _, err := toml.DecodeFile(*serveConfig, &conf); err != nil {
+	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
 		log.Fatal(err)
 	}
 	if err := conf.Validate(); err != nil {
@@ -122,10 +212,26 @@ func main() {
 		Name:      "copy",
 		Usage:     "apero copy <file path>",
 		FlagSet:   copyFlags,
-		ShortHelp: "copy a file to the server",
-		LongHelp: `Copy a file to the server.
-If the path given is - it will read from stdin.`,
+		ShortHelp: "copy a file to the staging server",
+		LongHelp: `Copy a file to the staging server.
+
+If the path given is - it will read from stdin.
+
+This command will print an ID which can be further used with move and paste.
+`,
 		Exec: runCopy,
+	}
+
+	moveCommand := &ffcli.Command{
+		Name:      "move",
+		Usage:     "apero move [entry id]",
+		FlagSet:   moveFlags,
+		ShortHelp: "move an entry from the staging server to here",
+		LongHelp: `Move an entry form the staging server to here.
+
+Without an argument it moves the oldest entry.
+With an argument it moves the specific entry if it exists.`,
+		Exec: runMove,
 	}
 
 	serveCommand := &ffcli.Command{
@@ -153,8 +259,8 @@ The path can be changed with a flag:
 		FlagSet:     globalFlags,
 		Options:     []ff.Option{ff.WithEnvVarPrefix("APERO")},
 		LongHelp:    `Run a staging server or communicate with one`,
-		Subcommands: []*ffcli.Command{copyCommand, serveCommand, genconfigCommand},
-		Exec: func([]string) error {
+		Subcommands: []*ffcli.Command{copyCommand, moveCommand, serveCommand, genconfigCommand},
+		Exec: func(args []string) error {
 			return errors.New("specify a subcommand")
 		},
 	}

@@ -63,7 +63,7 @@ func TestServerClient(t *testing.T) {
 
 		require.Equal(t, expID[:], body[:])
 
-		entry, err := server.st.Pop()
+		entry, err := server.st.RemoveFirst()
 		require.NoError(t, err)
 
 		require.Equal(t, content, entry)

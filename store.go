@@ -27,8 +27,9 @@ func newULID() ulid.ULID {
 
 type store interface {
 	Add(data []byte) (ulid.ULID, error)
-	Pop() ([]byte, error)
+	CopyFirst() ([]byte, error)
 	Copy(id ulid.ULID) ([]byte, error)
+	RemoveFirst() ([]byte, error)
 	Remove(id ulid.ULID) ([]byte, error)
 	ListAll() ([]ulid.ULID, error)
 }
@@ -62,7 +63,7 @@ func (s *memStore) Add(data []byte) (ulid.ULID, error) {
 	return entry.id, nil
 }
 
-func (s *memStore) Pop() ([]byte, error) {
+func (s *memStore) CopyFirst() ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -71,9 +72,11 @@ func (s *memStore) Pop() ([]byte, error) {
 	}
 
 	entry := s.entries[0]
-	s.entries = s.entries[1:]
 
-	return entry.content, nil
+	tmp := make([]byte, len(entry.content))
+	copy(tmp, entry.content)
+
+	return tmp, nil
 }
 
 func (s *memStore) Copy(id ulid.ULID) ([]byte, error) {
@@ -94,6 +97,20 @@ func (s *memStore) Copy(id ulid.ULID) ([]byte, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *memStore) RemoveFirst() ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if len(s.entries) < 1 {
+		return nil, nil
+	}
+
+	entry := s.entries[0]
+	s.entries = s.entries[1:]
+
+	return entry.content, nil
 }
 
 func (s *memStore) Remove(id ulid.ULID) ([]byte, error) {
@@ -130,3 +147,5 @@ func (s *memStore) ListAll() ([]ulid.ULID, error) {
 
 	return ids, nil
 }
+
+var _ store = (*memStore)(nil)

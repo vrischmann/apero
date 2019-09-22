@@ -158,9 +158,9 @@ func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	content, err := s.st.Pop()
+	content, err := s.st.RemoveFirst()
 	if err != nil {
-		log.Printf("unable to pop content. err=%v", err)
+		log.Printf("unable to first entry. err=%v", err)
 		responseString(w, "internal server error", http.StatusInternalServerError)
 		return
 	}

@@ -32,19 +32,19 @@ func TestMemStore(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, entries, 3)
 
-		tmp, err := s.Pop()
+		tmp, err := s.RemoveFirst()
 		require.NoError(t, err)
 		require.Equal(t, "foo", string(tmp))
 
-		tmp, err = s.Pop()
+		tmp, err = s.RemoveFirst()
 		require.NoError(t, err)
 		require.Equal(t, "bar", string(tmp))
 
-		tmp, err = s.Pop()
+		tmp, err = s.RemoveFirst()
 		require.NoError(t, err)
 		require.Equal(t, "baz", string(tmp))
 
-		tmp, err = s.Pop()
+		tmp, err = s.RemoveFirst()
 		require.NoError(t, err)
 		require.Nil(t, tmp)
 	})

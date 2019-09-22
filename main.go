@@ -130,7 +130,7 @@ func main() {
 		//
 
 		serverConf := serverConfig{
-			ListenAddr:    "http://localhost:7568",
+			ListenAddr:    "localhost:7568",
 			PSKey:         clientConf.PSKey,
 			SignPublicKey: clientConf.SignPublicKey,
 		}

@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/hex"
+	"errors"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/peterbourgon/ff"
+	"github.com/peterbourgon/ff/ffcli"
 	"github.com/vrischmann/hutil/v2"
 )
 
@@ -23,171 +24,142 @@ func readStdin() string {
 	return string(data)
 }
 
-func parseFlags(fs *flag.FlagSet, args []string) {
-	if err := fs.Parse(args); err != nil {
-		if err != flag.ErrHelp {
-			fs.Usage()
-		}
-		os.Exit(1)
+var (
+	globalFlags = flag.NewFlagSet("apero", flag.ExitOnError)
+
+	copyFlags  = flag.NewFlagSet("copy", flag.ExitOnError)
+	copyConfig = copyFlags.String("config", os.Getenv("HOME")+"/.apero.toml", "Configuration file to use")
+
+	serveFlags  = flag.NewFlagSet("serve", flag.ExitOnError)
+	serveConfig = serveFlags.String("config", os.Getenv("HOME")+"/.apero.toml", "Configuration file to use")
+
+	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
+	genconfigClientConfig = genconfigFlags.String("client-config", "client.toml", "File path for the client config")
+	genconfigServerConfig = genconfigFlags.String("server-config", "client.toml", "File path for the server config")
+)
+
+func runCopy(args []string) error {
+	var conf clientConfig
+	if _, err := toml.DecodeFile(*copyConfig, &conf); err != nil {
+		return err
 	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	// TODO(vincent): write me
+
+	return nil
 }
 
-func main() {
-
-	flag.Usage = func() {
-		fmt.Printf("Usage: apero [option] <command> [option]\n\n")
-		fmt.Printf("Available commands are:\n")
-		fmt.Printf("    serve %50s\n", "serve the API endpoints")
-		fmt.Printf("    genconfig %50s\n", "generate the different configurations")
-		fmt.Printf("    secretbox %50s\n", "seal and open secret boxes")
-		fmt.Printf("\nOptions are:\n")
-		flag.PrintDefaults()
-		fmt.Println()
+func runServe(args []string) error {
+	var conf serverConfig
+	if _, err := toml.DecodeFile(*serveConfig, &conf); err != nil {
+		log.Fatal(err)
 	}
-	flag.Parse()
-
-	if flag.NArg() < 1 {
-		flag.Usage()
-		os.Exit(1)
+	if err := conf.Validate(); err != nil {
+		log.Fatal(err)
 	}
 
 	//
 
-	cmd := flag.Arg(0)
-	args := flag.Args()[1:]
+	// TODO(vincent): configure this based on conf
+	server := newServer(conf, newMemStore())
 
-	var err error
-	switch cmd {
-	case "copy":
-		fs := flag.NewFlagSet("copy", flag.ContinueOnError)
-		flConfig := fs.String("config", "~/.apero.toml", "Configuration file to use")
-		parseFlags(fs, args)
+	var chain hutil.Chain
+	chain.Use(hutil.NewLoggingMiddleware(func(req *http.Request, statusCode int, responseSize int, elapsed time.Duration) {
+		log.Printf("[%3d] %s %d %s", statusCode, req.URL.Path, responseSize, elapsed)
+	}))
 
-		var conf clientConfig
-		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
-			log.Fatal(err)
-		}
-		if err := conf.Validate(); err != nil {
-			log.Fatal(err)
-		}
+	return http.ListenAndServe(conf.ListenAddr, chain.Handler(server))
+}
 
-	case "serve":
-		fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-		flConfig := fs.String("config", "~/.apero.toml", "Configuration file to use")
-		parseFlags(fs, args)
-
-		//
-
-		var conf serverConfig
-		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
-			log.Fatal(err)
-		}
-		if err := conf.Validate(); err != nil {
-			log.Fatal(err)
-		}
-
-		//
-
-		// TODO(vincent): configure this based on conf
-		server := newServer(conf, newMemStore())
-
-		var chain hutil.Chain
-		chain.Use(hutil.NewLoggingMiddleware(func(req *http.Request, statusCode int, responseSize int, elapsed time.Duration) {
-			log.Printf("[%3d] %s %d %s", statusCode, req.URL.Path, responseSize, elapsed)
-		}))
-
-		err = http.ListenAndServe(conf.ListenAddr, chain.Handler(server))
-
-	case "genconfig":
-		fs := flag.NewFlagSet("genconfig", flag.ContinueOnError)
-		flClientConfig := fs.String("client-config", "client.toml", "File path for the client config")
-		flServerConfig := fs.String("server-config", "server.toml", "File path for the server config")
-		parseFlags(fs, args)
-
-		pub, priv, err := generateKeyPair()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		//
-
-		clientConf := clientConfig{
-			Endpoint:       "http://localhost:7568",
-			PSKey:          newSecretBoxKey(),
-			EncryptKey:     newSecretBoxKey(),
-			SignPublicKey:  pub,
-			SignPrivateKey: priv,
-		}
-		f, err := os.OpenFile(*flClientConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
-		if err != nil {
-			log.Fatalf("unable to create file %s. err=%v", *flClientConfig, err)
-		}
-		if err := toml.NewEncoder(f).Encode(clientConf); err != nil {
-			log.Fatalf("unable to encode to file. err=%v", err)
-		}
-		f.Close()
-
-		//
-
-		serverConf := serverConfig{
-			ListenAddr:    "localhost:7568",
-			PSKey:         clientConf.PSKey,
-			SignPublicKey: clientConf.SignPublicKey,
-		}
-		f, err = os.OpenFile(*flServerConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := toml.NewEncoder(f).Encode(serverConf); err != nil {
-			log.Fatal(err)
-		}
-		f.Close()
-
-	case "secretbox":
-		fs := flag.NewFlagSet("secetbox", flag.ContinueOnError)
-		flKey := fs.String("key", "", "The secret key used to seal/open the box")
-		flOpen := fs.Bool("open", false, "Open a sealed box")
-		flSeal := fs.Bool("seal", false, "Seal a message into a box")
-		parseFlags(fs, args)
-
-		keyData, err := hex.DecodeString(*flKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if len(keyData) != secretBoxKeySize {
-			log.Fatalf("invalid key size %d", len(keyData))
-		}
-
-		var key secretBoxKey
-		copy(key[:], keyData)
-
-		switch {
-		case *flOpen:
-			data, err := hex.DecodeString(fs.Arg(0))
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			message, opened := secretBoxOpen(data, key)
-			if !opened {
-				log.Fatal("unable to open box")
-			}
-
-			fmt.Printf("%s\n", string(message))
-
-		case *flSeal:
-			message := []byte(fs.Arg(0))
-
-			ciphertext := secretBoxSeal(message, key)
-
-			fmt.Printf("%02x\n", ciphertext)
-		}
-
-	default:
-		fmt.Printf("unknown command %q\n", cmd)
-	}
-
+func runGenconfig(args []string) error {
+	pub, priv, err := generateKeyPair()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	//
+
+	clientConf := clientConfig{
+		Endpoint:       "http://localhost:7568",
+		PSKey:          newSecretBoxKey(),
+		EncryptKey:     newSecretBoxKey(),
+		SignPublicKey:  pub,
+		SignPrivateKey: priv,
+	}
+	f, err := os.OpenFile(*genconfigClientConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+	if err != nil {
+		return err
+	}
+	if err := toml.NewEncoder(f).Encode(clientConf); err != nil {
+		return err
+	}
+	f.Close()
+
+	//
+
+	serverConf := serverConfig{
+		ListenAddr:    "localhost:7568",
+		PSKey:         clientConf.PSKey,
+		SignPublicKey: clientConf.SignPublicKey,
+	}
+	f, err = os.OpenFile(*genconfigServerConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+	if err != nil {
+		return err
+	}
+	if err := toml.NewEncoder(f).Encode(serverConf); err != nil {
+		return err
+	}
+	f.Close()
+
+	return nil
+}
+
+func main() {
+	copyCommand := &ffcli.Command{
+		Name:      "copy",
+		Usage:     "apero copy <file path>",
+		FlagSet:   copyFlags,
+		ShortHelp: "copy a file to the server",
+		LongHelp: `Copy a file to the server.
+If the path given is - it will read from stdin.`,
+		Exec: runCopy,
+	}
+
+	serveCommand := &ffcli.Command{
+		Name:      "serve",
+		Usage:     "apero serve [flags]",
+		FlagSet:   serveFlags,
+		ShortHelp: "serve requests to clients",
+		Exec:      runServe,
+	}
+
+	genconfigCommand := &ffcli.Command{
+		Name:      "genconfig",
+		Usage:     "apero genconfig [flags]",
+		FlagSet:   genconfigFlags,
+		ShortHelp: "generate configuration files for client and server",
+		LongHelp: `generate configuration files for client and server.
+The path can be changed with a flag:
+
+    apero genconfig -client-config=/tmp/client.toml -server-config=/tmp/server.toml`,
+		Exec: runGenconfig,
+	}
+
+	root := &ffcli.Command{
+		Usage:       "apero [global flags] <subcommand> [flags] [args...]",
+		FlagSet:     globalFlags,
+		Options:     []ff.Option{ff.WithEnvVarPrefix("APERO")},
+		LongHelp:    `Run a staging server or communicate with one`,
+		Subcommands: []*ffcli.Command{copyCommand, serveCommand, genconfigCommand},
+		Exec: func([]string) error {
+			return errors.New("specify a subcommand")
+		},
+	}
+
+	if err := root.Run(os.Args[1:]); err != nil {
+		log.Fatalf("error: %v", err)
 	}
 }

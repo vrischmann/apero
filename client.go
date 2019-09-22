@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/oklog/ulid/v2"
 )
 
 type clientConfig struct {
@@ -78,7 +79,10 @@ func (c *client) doCopy(req copyRequest) error {
 		return fmt.Errorf("unable to open response box")
 	}
 
-	log.Printf("body: %s", string(body))
+	var id ulid.ULID
+	copy(id[:], body)
+
+	fmt.Printf("id: %s\n", id)
 
 	return nil
 }

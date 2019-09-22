@@ -99,8 +99,6 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("payload: %s", string(payload.Content))
-
 	// TODO(vincent): size limits and stuff
 
 	id, err := s.st.Add(payload.Content)
@@ -110,9 +108,6 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.Printf("stored payload with id: %s", id)
-
-	// TODO(vincent): temporary for testing
 	respData := secretBoxSeal(id[:], s.conf.PSKey)
 
 	w.WriteHeader(http.StatusAccepted)

@@ -28,3 +28,15 @@ func (r copyRequest) Validate() error {
 	}
 	return nil
 }
+
+type moveRequest struct {
+	Signature []byte
+}
+
+// Validate validates the request parameters.
+func (r moveRequest) Validate() error {
+	if len(r.Signature) != ed25519.SignatureSize {
+		return fmt.Errorf("Signature size is invalid")
+	}
+	return nil
+}

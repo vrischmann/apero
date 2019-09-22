@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -41,6 +42,8 @@ var (
 
 	copyFlags  = flag.NewFlagSet("copy", flag.ExitOnError)
 	moveFlags  = flag.NewFlagSet("move", flag.ExitOnError)
+	pasteFlags = flag.NewFlagSet("paste", flag.ExitOnError)
+	listFlags  = flag.NewFlagSet("list", flag.ExitOnError)
 	serveFlags = flag.NewFlagSet("serve", flag.ExitOnError)
 
 	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
@@ -167,6 +170,49 @@ func runPaste(args []string) error {
 	return doRunMoveOrPaste(args, "/paste")
 }
 
+func runList(args []string) error {
+	var conf clientConfig
+	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
+		return err
+	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	//
+
+	client := newClient(conf)
+
+	body, err := client.doList(listRequest{
+		Signature: sign(conf.SignPrivateKey, []byte("L")),
+	})
+	if err != nil {
+		return err
+	}
+	if len(body) == 0 {
+		return errors.New("nothing in the staging server")
+	}
+
+	//
+
+	var resp listResponse
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return fmt.Errorf("unable to unmarshal response")
+	}
+
+	if len(resp.Entries) == 0 {
+		fmt.Println("no entries")
+		return nil
+	}
+
+	fmt.Printf("entries:\n")
+	for _, entry := range resp.Entries {
+		fmt.Printf("%s (time: %s)\n", entry, ulid.Time(entry.Time()).UTC().Format(time.RFC3339))
+	}
+
+	return nil
+}
+
 func runServe(args []string) error {
 	var conf serverConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
@@ -262,13 +308,21 @@ With an argument it moves the specific entry if it exists.`,
 	pasteCommand := &ffcli.Command{
 		Name:      "paste",
 		Usage:     "apero paste [entry id]",
-		FlagSet:   moveFlags,
+		FlagSet:   pasteFlags,
 		ShortHelp: "paste an entry from the staging server to here",
 		LongHelp: `Paste an entry from the staging server to here.
 
 Without an argument it pastes the oldest entry.
 With an argument it pastes the specific entry if it exists.`,
-		Exec: runMove,
+		Exec: runPaste,
+	}
+
+	listCommand := &ffcli.Command{
+		Name:      "list",
+		Usage:     "apero list",
+		FlagSet:   listFlags,
+		ShortHelp: "list all entries in the staging server",
+		Exec:      runList,
 	}
 
 	serveCommand := &ffcli.Command{
@@ -296,7 +350,7 @@ The path can be changed with a flag:
 		FlagSet:     globalFlags,
 		Options:     []ff.Option{ff.WithEnvVarPrefix("APERO")},
 		LongHelp:    `Run a staging server or communicate with one`,
-		Subcommands: []*ffcli.Command{copyCommand, moveCommand, pasteCommand, serveCommand, genconfigCommand},
+		Subcommands: []*ffcli.Command{copyCommand, moveCommand, pasteCommand, listCommand, serveCommand, genconfigCommand},
 		Exec: func(args []string) error {
 			return errors.New("specify a subcommand")
 		},

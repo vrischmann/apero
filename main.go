@@ -41,7 +41,7 @@ func main() {
 		fmt.Printf("Usage: apero [option] <command> [option]\n\n")
 		fmt.Printf("Available commands are:\n")
 		fmt.Printf("    serve %50s\n", "serve the API endpoints")
-		fmt.Printf("    genkeys %50s\n", "generate public and private keys")
+		fmt.Printf("    genconfig %50s\n", "generate the different configurations")
 		fmt.Printf("    secretbox %50s\n", "seal and open secret boxes")
 		fmt.Printf("\nOptions are:\n")
 		flag.PrintDefaults()

@@ -61,6 +61,12 @@ func (k *publicKey) UnmarshalJSON(data []byte) error {
 	return k.UnmarshalText([]byte(s))
 }
 
+// MarshalText implements encoding.TextMarshaler
+func (k publicKey) MarshalText() ([]byte, error) {
+	s := k.String()
+	return []byte(s), nil
+}
+
 // UnmarshalTExt implements encoding.TextUnmarshaler
 func (k *publicKey) UnmarshalText(p []byte) error {
 	data, err := base64.StdEncoding.DecodeString(string(p))
@@ -89,6 +95,12 @@ func (k privateKey) String() string {
 
 func (k privateKey) IsValid() bool {
 	return len(k) == privateKeySize
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (k privateKey) MarshalText() ([]byte, error) {
+	s := k.String()
+	return []byte(s), nil
 }
 
 // UnmarshalTExt implements encoding.TextUnmarshaler
@@ -136,6 +148,12 @@ func secretBoxKeyFromString(s string) (*secretBoxKey, error) {
 
 func (k secretBoxKey) IsValid() bool {
 	return len(k) == secretBoxKeySize
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (k secretBoxKey) MarshalText() ([]byte, error) {
+	s := k.String()
+	return []byte(s), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler

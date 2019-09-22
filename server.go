@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/vrischmann/hutil/v2"
 )
 
@@ -47,10 +48,8 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	switch head {
 	case "copy":
 		s.handleCopy(w, req)
-	case "move":
-		s.handleMove(w, req)
-	case "paste":
-		s.handlePaste(w, req)
+	case "move", "paste":
+		s.handleMoveOrPaste(w, req, head)
 	default:
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
@@ -114,7 +113,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 	w.Write(respData)
 }
 
-func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
+func (s *server) handleMoveOrPaste(w http.ResponseWriter, req *http.Request, action string) {
 	if req.Method != http.MethodPost {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
@@ -136,7 +135,7 @@ func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 
 	//
 
-	var payload moveRequest
+	var payload moveOrPasteRequest
 	if err := json.Unmarshal(data, &payload); err != nil {
 		log.Printf("unable to unmarshal move request payload. err=%v", err)
 		responseString(w, "invalid move request", http.StatusBadRequest)
@@ -151,19 +150,38 @@ func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 	//
 
 	// NOTE(vincent): since there's no content in a move request we sign the single byte M
-	validSignature := verify(s.conf.SignPublicKey, []byte("M"), payload.Signature)
+	validSignature := verify(s.conf.SignPublicKey, payload.ID[:], payload.Signature)
 	if !validSignature {
 		log.Printf("invalid signature")
 		responseString(w, "invalid signature", http.StatusBadRequest)
 		return
 	}
 
-	content, err := s.st.RemoveFirst()
+	//
+
+	var content []byte
+
+	switch {
+	case action == "move" && isEmptyULID(payload.ID):
+		content, err = s.st.RemoveFirst()
+
+	case action == "move" && !isEmptyULID(payload.ID):
+		content, err = s.st.Remove(payload.ID)
+
+	case action == "paste" && isEmptyULID(payload.ID):
+		content, err = s.st.CopyFirst()
+
+	case action == "paste" && !isEmptyULID(payload.ID):
+		content, err = s.st.Copy(payload.ID)
+	}
+
 	if err != nil {
-		log.Printf("unable to first entry. err=%v", err)
+		log.Printf("unable to retrieve entry. err=%v", err)
 		responseString(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	//
 
 	respData := secretBoxSeal(content, s.conf.PSKey)
 
@@ -171,7 +189,9 @@ func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 	w.Write(respData)
 }
 
-func (s *server) handlePaste(w http.ResponseWriter, req *http.Request) {
+func isEmptyULID(id ulid.ULID) bool {
+	var emptyID ulid.ULID
+	return id == emptyID
 }
 
 func responseStatusCode(w http.ResponseWriter, code int) {

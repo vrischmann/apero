@@ -93,7 +93,7 @@ func runCopy(args []string) error {
 	return nil
 }
 
-func runMove(args []string) error {
+func doRunMoveOrPaste(args []string, action string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
 		return err
@@ -110,20 +110,17 @@ func runMove(args []string) error {
 			return err
 		}
 	}
-	// TODO(vincent): implement specific move
-	_ = id
 
-	//
-
-	signature := sign(conf.SignPrivateKey, []byte("M"))
+	req := moveOrPasteRequest{
+		ID:        id,
+		Signature: sign(conf.SignPrivateKey, id[:]),
+	}
 
 	//
 
 	client := newClient(conf)
 
-	req := moveRequest{Signature: signature}
-
-	body, err := client.doRequest(req, "/move")
+	body, err := client.doRequest(req, action)
 	if err != nil {
 		return err
 	}
@@ -140,6 +137,14 @@ func runMove(args []string) error {
 	os.Stdout.Write(plaintext)
 
 	return nil
+}
+
+func runMove(args []string) error {
+	return doRunMoveOrPaste(args, "/move")
+}
+
+func runPaste(args []string) error {
+	return doRunMoveOrPaste(args, "/paste")
 }
 
 func runServe(args []string) error {
@@ -227,10 +232,22 @@ This command will print an ID which can be further used with move and paste.
 		Usage:     "apero move [entry id]",
 		FlagSet:   moveFlags,
 		ShortHelp: "move an entry from the staging server to here",
-		LongHelp: `Move an entry form the staging server to here.
+		LongHelp: `Move an entry from the staging server to here.
 
 Without an argument it moves the oldest entry.
 With an argument it moves the specific entry if it exists.`,
+		Exec: runMove,
+	}
+
+	pasteCommand := &ffcli.Command{
+		Name:      "paste",
+		Usage:     "apero paste [entry id]",
+		FlagSet:   moveFlags,
+		ShortHelp: "paste an entry from the staging server to here",
+		LongHelp: `Paste an entry from the staging server to here.
+
+Without an argument it pastes the oldest entry.
+With an argument it pastes the specific entry if it exists.`,
 		Exec: runMove,
 	}
 
@@ -259,7 +276,7 @@ The path can be changed with a flag:
 		FlagSet:     globalFlags,
 		Options:     []ff.Option{ff.WithEnvVarPrefix("APERO")},
 		LongHelp:    `Run a staging server or communicate with one`,
-		Subcommands: []*ffcli.Command{copyCommand, moveCommand, serveCommand, genconfigCommand},
+		Subcommands: []*ffcli.Command{copyCommand, moveCommand, pasteCommand, serveCommand, genconfigCommand},
 		Exec: func(args []string) error {
 			return errors.New("specify a subcommand")
 		},

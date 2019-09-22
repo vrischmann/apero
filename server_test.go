@@ -69,28 +69,101 @@ func TestServerClient(t *testing.T) {
 		require.Equal(t, content, entry)
 	})
 
-	t.Run("move", func(t *testing.T) {
+	t.Run("move-oldest", func(t *testing.T) {
 		_, err := server.st.Add([]byte("yoo"))
 		require.NoError(t, err)
 
 		//
 
-		signature := sign(clientConf.SignPrivateKey, []byte("M"))
-		req := moveRequest{Signature: signature}
+		var req moveOrPasteRequest
+		req.Signature = sign(clientConf.SignPrivateKey, req.ID[:])
 
 		body, err := client.doRequest(req, "/move")
 		require.NoError(t, err)
+		require.Equal(t, []byte("yoo"), body)
 
 		//
 
 		entries, err := server.st.ListAll()
 		require.NoError(t, err)
 		require.Empty(t, entries)
-
-		require.Equal(t, []byte("yoo"), body)
 	})
 
-	t.Run("paste", func(t *testing.T) {
+	t.Run("move-specific", func(t *testing.T) {
+		oldestID, err := server.st.Add([]byte("yoo"))
+		require.NoError(t, err)
+		id, err := server.st.Add([]byte("yezi"))
+		require.NoError(t, err)
+		require.False(t, isEmptyULID(id))
+
+		//
+
+		req := moveOrPasteRequest{
+			ID:        id,
+			Signature: sign(clientConf.SignPrivateKey, id[:]),
+		}
+
+		body, err := client.doRequest(req, "/move")
+		require.NoError(t, err)
+		require.Equal(t, []byte("yezi"), body)
+
+		//
+
+		entries, err := server.st.ListAll()
+		require.NoError(t, err)
+		require.Equal(t, entries[0], oldestID)
+
+		server.st.RemoveFirst() // cleanup for the next test
+	})
+
+	t.Run("paste-oldest", func(t *testing.T) {
+		id, err := server.st.Add([]byte("yoo"))
+		require.NoError(t, err)
+
+		//
+
+		var req moveOrPasteRequest
+		req.Signature = sign(clientConf.SignPrivateKey, req.ID[:])
+
+		body, err := client.doRequest(req, "/paste")
+		require.NoError(t, err)
+		require.Equal(t, []byte("yoo"), body)
+
+		//
+
+		entries, err := server.st.ListAll()
+		require.NoError(t, err)
+		require.Equal(t, 1, len(entries))
+		require.Equal(t, id, entries[0])
+
+		server.st.RemoveFirst() // cleanup for the next test
+	})
+
+	t.Run("paste-specific", func(t *testing.T) {
+		oldestID, err := server.st.Add([]byte("yoo"))
+		require.NoError(t, err)
+		id, err := server.st.Add([]byte("yeoa"))
+		require.NoError(t, err)
+
+		//
+
+		req := moveOrPasteRequest{
+			ID:        id,
+			Signature: sign(clientConf.SignPrivateKey, id[:]),
+		}
+
+		body, err := client.doRequest(req, "/paste")
+		require.NoError(t, err)
+		require.Equal(t, []byte("yeoa"), body)
+
+		//
+
+		entries, err := server.st.ListAll()
+		require.NoError(t, err)
+		require.Equal(t, 2, len(entries))
+		require.Equal(t, oldestID, entries[0])
+		require.Equal(t, id, entries[1])
+
 	})
 }
 

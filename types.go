@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -29,12 +30,13 @@ func (r copyRequest) Validate() error {
 	return nil
 }
 
-type moveRequest struct {
+type moveOrPasteRequest struct {
 	Signature []byte
+	ID        ulid.ULID
 }
 
 // Validate validates the request parameters.
-func (r moveRequest) Validate() error {
+func (r moveOrPasteRequest) Validate() error {
 	if len(r.Signature) != ed25519.SignatureSize {
 		return fmt.Errorf("Signature size is invalid")
 	}

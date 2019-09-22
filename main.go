@@ -23,6 +23,15 @@ func readStdin() string {
 	return string(data)
 }
 
+func parseFlags(fs *flag.FlagSet, args []string) {
+	if err := fs.Parse(args); err != nil {
+		if err != flag.ErrHelp {
+			fs.Usage()
+		}
+		os.Exit(1)
+	}
+}
+
 func main() {
 	var (
 		flConfig = flag.String("config", "~/.apero.toml", "Configuration file to use")
@@ -54,10 +63,7 @@ func main() {
 	switch cmd {
 	case "copy":
 		fs := flag.NewFlagSet("copy", flag.ContinueOnError)
-		if err := fs.Parse(args); err != nil {
-			fs.Usage()
-			os.Exit(1)
-		}
+		parseFlags(fs, args)
 
 		var conf clientConfig
 		if _, err := toml.DecodeFile(*flConfig, &conf); err != nil {
@@ -69,10 +75,7 @@ func main() {
 
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-		if err := fs.Parse(args); err != nil {
-			fs.Usage()
-			os.Exit(1)
-		}
+		parseFlags(fs, args)
 
 		//
 
@@ -96,44 +99,57 @@ func main() {
 
 		err = http.ListenAndServe(conf.ListenAddr, chain.Handler(server))
 
-	case "genkeys":
-		fs := flag.NewFlagSet("genkeys", flag.ContinueOnError)
-		flSecretBox := fs.Bool("secretbox", false, "Generate a key for a secretbox")
-		flKeyPair := fs.Bool("keypair", false, "Generate a ed25519 key pair. Useful only for debugging")
-		if err := fs.Parse(args); err != nil {
-			fs.Usage()
-			os.Exit(1)
+	case "genconfig":
+		fs := flag.NewFlagSet("genconfig", flag.ContinueOnError)
+		flClientConfig := fs.String("client-config", "client.toml", "File path for the client config")
+		flServerConfig := fs.String("server-config", "server.toml", "File path for the server config")
+		parseFlags(fs, args)
+
+		pub, priv, err := generateKeyPair()
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		switch {
-		case *flSecretBox:
-			key := newSecretBoxKey()
+		//
 
-			fmt.Printf("Key = %q\n", key)
-
-		case *flKeyPair:
-			publicKey, privateKey, err := generateKeyPair()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			fmt.Printf("PrivateKey = %q\n", privateKey)
-			fmt.Printf("PublicKey = %q\n", publicKey)
-
-		default:
-			fs.Usage()
-			os.Exit(1)
+		clientConf := clientConfig{
+			Endpoint:       "http://localhost:7568",
+			PSKey:          newSecretBoxKey(),
+			EncryptKey:     newSecretBoxKey(),
+			SignPublicKey:  pub,
+			SignPrivateKey: priv,
 		}
+		f, err := os.OpenFile(*flClientConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+		if err != nil {
+			log.Fatalf("unable to create file %s. err=%v", *flClientConfig, err)
+		}
+		if err := toml.NewEncoder(f).Encode(clientConf); err != nil {
+			log.Fatalf("unable to encode to file. err=%v", err)
+		}
+		f.Close()
+
+		//
+
+		serverConf := serverConfig{
+			ListenAddr:    "http://localhost:7568",
+			PSKey:         clientConf.PSKey,
+			SignPublicKey: clientConf.SignPublicKey,
+		}
+		f, err = os.OpenFile(*flServerConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := toml.NewEncoder(f).Encode(serverConf); err != nil {
+			log.Fatal(err)
+		}
+		f.Close()
 
 	case "secretbox":
 		fs := flag.NewFlagSet("secetbox", flag.ContinueOnError)
 		flKey := fs.String("key", "", "The secret key used to seal/open the box")
 		flOpen := fs.Bool("open", false, "Open a sealed box")
 		flSeal := fs.Bool("seal", false, "Seal a message into a box")
-		if err := fs.Parse(args); err != nil {
-			fs.Usage()
-			os.Exit(1)
-		}
+		parseFlags(fs, args)
 
 		keyData, err := hex.DecodeString(*flKey)
 		if err != nil {
@@ -167,6 +183,9 @@ func main() {
 
 			fmt.Printf("%02x\n", ciphertext)
 		}
+
+	default:
+		fmt.Printf("unknown command %q\n", cmd)
 	}
 
 	if err != nil {

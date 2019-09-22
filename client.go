@@ -23,7 +23,15 @@ func (c clientConfig) Validate() error {
 	if _, err := url.Parse(c.Endpoint); err != nil {
 		return err
 	}
-	// TODO(vincent): encrypt key
+	if !c.PSKey.IsValid() {
+		return fmt.Errorf("ps key is invalid")
+	}
+	if !c.SignPrivateKey.IsValid() {
+		return fmt.Errorf("sign public key is invalid")
+	}
+	if !c.SignPublicKey.IsValid() {
+		return fmt.Errorf("sign public key is invalid")
+	}
 	return nil
 }
 

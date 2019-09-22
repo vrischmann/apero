@@ -17,10 +17,19 @@ import (
 	"github.com/vrischmann/hutil/v2"
 )
 
+func fatal(args ...interface{}) {
+	fmt.Println(args...)
+	os.Exit(1)
+}
+func fatalf(format string, args ...interface{}) {
+	fmt.Printf(format+"\n", args...)
+	os.Exit(1)
+}
+
 func readStdin() string {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 
 	return string(data)
@@ -126,7 +135,7 @@ func doRunMoveOrPaste(args []string, action string) error {
 	}
 
 	if len(body) == 0 {
-		return nil
+		return errors.New("nothing in the staging server")
 	}
 
 	plaintext, ok := secretBoxOpen(body, conf.EncryptKey)
@@ -150,10 +159,10 @@ func runPaste(args []string) error {
 func runServe(args []string) error {
 	var conf serverConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 	if err := conf.Validate(); err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 
 	//
@@ -172,7 +181,7 @@ func runServe(args []string) error {
 func runGenconfig(args []string) error {
 	pub, priv, err := generateKeyPair()
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 
 	//
@@ -283,6 +292,6 @@ The path can be changed with a flag:
 	}
 
 	if err := root.Run(os.Args[1:]); err != nil {
-		log.Fatalf("error: %v", err)
+		fmt.Printf("error: %v\n", err)
 	}
 }

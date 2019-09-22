@@ -181,6 +181,11 @@ func (s *server) handleMoveOrPaste(w http.ResponseWriter, req *http.Request, act
 		return
 	}
 
+	if len(content) == 0 {
+		responseStatusCode(w, http.StatusNotFound)
+		return
+	}
+
 	//
 
 	respData := secretBoxSeal(content, s.conf.PSKey)

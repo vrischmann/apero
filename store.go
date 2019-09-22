@@ -28,6 +28,7 @@ func newULID() ulid.ULID {
 type store interface {
 	Add(data []byte) (ulid.ULID, error)
 	Pop() ([]byte, error)
+	Copy(id ulid.ULID) ([]byte, error)
 	Remove(id ulid.ULID) ([]byte, error)
 	ListAll() ([]ulid.ULID, error)
 }
@@ -73,6 +74,26 @@ func (s *memStore) Pop() ([]byte, error) {
 	s.entries = s.entries[1:]
 
 	return entry.content, nil
+}
+
+func (s *memStore) Copy(id ulid.ULID) ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	pos := sort.Search(len(s.entries), func(i int) bool {
+		return s.entries[i].id == id
+	})
+
+	if pos < len(s.entries) && s.entries[pos].id == id {
+		entry := s.entries[pos]
+
+		tmp := make([]byte, len(entry.content))
+		copy(tmp, entry.content)
+
+		return tmp, nil
+	}
+
+	return nil, nil
 }
 
 func (s *memStore) Remove(id ulid.ULID) ([]byte, error) {

@@ -33,9 +33,6 @@ func parseFlags(fs *flag.FlagSet, args []string) {
 }
 
 func main() {
-	var (
-		flConfig = flag.String("config", "~/.apero.toml", "Configuration file to use")
-	)
 
 	flag.Usage = func() {
 		fmt.Printf("Usage: apero [option] <command> [option]\n\n")
@@ -63,6 +60,7 @@ func main() {
 	switch cmd {
 	case "copy":
 		fs := flag.NewFlagSet("copy", flag.ContinueOnError)
+		flConfig := fs.String("config", "~/.apero.toml", "Configuration file to use")
 		parseFlags(fs, args)
 
 		var conf clientConfig
@@ -75,6 +73,7 @@ func main() {
 
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+		flConfig := fs.String("config", "~/.apero.toml", "Configuration file to use")
 		parseFlags(fs, args)
 
 		//

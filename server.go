@@ -115,6 +115,60 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodPost {
+		responseStatusCode(w, http.StatusMethodNotAllowed)
+		return
+	}
+
+	data, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		responseStatusCode(w, http.StatusInternalServerError)
+		return
+	}
+	defer req.Body.Close()
+
+	data, ok := secretBoxOpen(data, s.conf.PSKey)
+	if !ok {
+		log.Printf("unable to open box")
+		responseStatusCode(w, http.StatusBadRequest)
+		return
+	}
+
+	//
+
+	var payload moveRequest
+	if err := json.Unmarshal(data, &payload); err != nil {
+		log.Printf("unable to unmarshal move request payload. err=%v", err)
+		responseString(w, "invalid move request", http.StatusBadRequest)
+		return
+	}
+	if err := payload.Validate(); err != nil {
+		log.Printf("move request payload invalid. err=%v", err)
+		responseString(w, "invalid move request", http.StatusBadRequest)
+		return
+	}
+
+	//
+
+	// NOTE(vincent): since there's no content in a move request we sign the single byte M
+	validSignature := verify(s.conf.SignPublicKey, []byte("M"), payload.Signature)
+	if !validSignature {
+		log.Printf("invalid signature")
+		responseString(w, "invalid signature", http.StatusBadRequest)
+		return
+	}
+
+	content, err := s.st.Pop()
+	if err != nil {
+		log.Printf("unable to pop content. err=%v", err)
+		responseString(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	respData := secretBoxSeal(content, s.conf.PSKey)
+
+	w.WriteHeader(http.StatusAccepted)
+	w.Write(respData)
 }
 
 func (s *server) handlePaste(w http.ResponseWriter, req *http.Request) {

@@ -45,23 +45,23 @@ func TestServerClient(t *testing.T) {
 	clientConf.SignPrivateKey = privateKey
 
 	client := newClient(clientConf)
-	_ = client
 
 	t.Run("copy", func(t *testing.T) {
 		content := []byte("hello")
 		signature := sign(clientConf.SignPrivateKey, content)
+		req := copyRequest{Signature: signature, Content: content}
 
-		req := copyRequest{
-			Signature: signature,
-			Content:   content,
-		}
-
-		err := client.doCopy(req)
+		body, err := client.doRequest(req, "/copy")
 		require.NoError(t, err)
+
+		//
 
 		entries, err := server.st.ListAll()
 		require.NoError(t, err)
 		require.NotEmpty(t, entries)
+		expID := entries[0]
+
+		require.Equal(t, expID[:], body[:])
 
 		entry, err := server.st.Pop()
 		require.NoError(t, err)
@@ -70,6 +70,24 @@ func TestServerClient(t *testing.T) {
 	})
 
 	t.Run("move", func(t *testing.T) {
+		_, err := server.st.Add([]byte("yoo"))
+		require.NoError(t, err)
+
+		//
+
+		signature := sign(clientConf.SignPrivateKey, []byte("M"))
+		req := moveRequest{Signature: signature}
+
+		body, err := client.doRequest(req, "/move")
+		require.NoError(t, err)
+
+		//
+
+		entries, err := server.st.ListAll()
+		require.NoError(t, err)
+		require.Empty(t, entries)
+
+		require.Equal(t, []byte("yoo"), body)
 	})
 
 	t.Run("paste", func(t *testing.T) {

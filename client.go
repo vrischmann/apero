@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/oklog/ulid/v2"
 )
 
 type clientConfig struct {
@@ -51,48 +49,43 @@ func (c *client) makeURL(path string) string {
 	return c.conf.Endpoint + path
 }
 
-func (c *client) doCopy(req copyRequest) error {
+func (c *client) doRequest(req interface{}, path string) ([]byte, error) {
 	data, err := json.Marshal(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ciphertext := secretBoxSeal(data, c.conf.PSKey)
 
 	//
 
-	hreq, err := http.NewRequest(http.MethodPost, c.makeURL("/copy"), bytes.NewReader(ciphertext))
+	hreq, err := http.NewRequest(http.MethodPost, c.makeURL(path), bytes.NewReader(ciphertext))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	hreq.Header.Set("Content-Type", "application/octet-stream")
 
 	resp, err := c.httpClient.Do(hreq)
 	if err != nil {
-		return fmt.Errorf("unable to copy to staging server. body=%q err: %v", maybeReadHTTPResponseBody(resp), err)
+		return nil, fmt.Errorf("unable to copy to staging server. body=%q err: %v", maybeReadHTTPResponseBody(resp), err)
 	}
 	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("invalid status code %s. body=%q", resp.Status, maybeReadHTTPResponseBody(resp))
+		return nil, fmt.Errorf("invalid status code %s. body=%q", resp.Status, maybeReadHTTPResponseBody(resp))
 	}
 
 	//
 
 	body, err := readHTTPResponseBody(resp)
 	if err != nil {
-		return fmt.Errorf("unable to read response body. err: %v", err)
+		return nil, fmt.Errorf("unable to read response body. err: %v", err)
 	}
 
 	body, opened := secretBoxOpen(body, c.conf.PSKey)
 	if !opened {
-		return fmt.Errorf("unable to open response box")
+		return nil, fmt.Errorf("unable to open response box")
 	}
 
-	var id ulid.ULID
-	copy(id[:], body)
-
-	fmt.Printf("id: %s\n", id)
-
-	return nil
+	return body, nil
 }
 
 func maybeReadHTTPResponseBody(resp *http.Response) string {

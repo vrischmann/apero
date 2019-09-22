@@ -1,49 +1,35 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/stretchr/testify/require"
 )
 
 func TestKeyPairString(t *testing.T) {
 	pub, priv, err := generateKeyPair()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Run("public", func(t *testing.T) {
 		var k publicKey
 		err := (&k).UnmarshalText([]byte(pub.String()))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if exp, got := pub, k; !bytes.Equal(exp, got) {
-			t.Fatalf("expected %q but got %q", exp, got)
-		}
+		require.NoError(t, err)
+		require.Equal(t, pub, k)
 	})
 
 	t.Run("private", func(t *testing.T) {
 		var k privateKey
 		err := (&k).UnmarshalText([]byte(priv.String()))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if exp, got := priv, k; !bytes.Equal(exp, got) {
-			t.Fatalf("expected %q but got %q", exp, got)
-		}
+		require.NoError(t, err)
+		require.Equal(t, priv, k)
 	})
 }
 
 func TestPublicKeyUnmarshalJSON(t *testing.T) {
 	pub, _, err := generateKeyPair()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var obj struct {
 		Key publicKey
@@ -51,28 +37,19 @@ func TestPublicKeyUnmarshalJSON(t *testing.T) {
 	obj.Key = pub
 
 	data, err := json.Marshal(obj)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var obj2 struct {
 		Key publicKey
 	}
 	err = json.Unmarshal(data, &obj2)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if exp, got := pub, obj2.Key; !bytes.Equal(exp, got) {
-		t.Fatalf("expected %q but got %q", exp, got)
-	}
+	require.NoError(t, err)
+	require.Equal(t, pub, obj2.Key)
 }
 
 func TestKeyPairUnmarshalText(t *testing.T) {
 	pub, priv, err := generateKeyPair()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	t.Run("public", func(t *testing.T) {
 		t.Run("normal", func(t *testing.T) {
@@ -80,13 +57,8 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 
 			var key publicKey
 			err := (&key).UnmarshalText([]byte(s))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if exp, got := pub, key; !bytes.Equal(exp, got) {
-				t.Fatalf("expected %q, got %q", exp, got)
-			}
+			require.NoError(t, err)
+			require.Equal(t, pub, key)
 		})
 
 		t.Run("toml", func(t *testing.T) {
@@ -95,15 +67,9 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 			}
 
 			md, err := toml.Decode(`Key = "`+pub.String()+`"`, &obj)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got := len(md.Undecoded()); got > 0 {
-				t.Fatal("expected no undecoded keys")
-			}
-			if exp, got := pub, obj.Key; !bytes.Equal(exp, got) {
-				t.Fatalf("expected %q, got %q", exp, got)
-			}
+			require.NoError(t, err)
+			require.Empty(t, md.Undecoded())
+			require.Equal(t, pub, obj.Key)
 		})
 	})
 
@@ -113,13 +79,8 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 
 			var key privateKey
 			err := (&key).UnmarshalText([]byte(s))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if exp, got := s, key.String(); exp != got {
-				t.Fatalf("expected %q, got %q", exp, got)
-			}
+			require.NoError(t, err)
+			require.Equal(t, s, key.String())
 		})
 
 		t.Run("toml", func(t *testing.T) {
@@ -128,12 +89,8 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 			}
 
 			md, err := toml.Decode(`Key = "`+priv.String()+`"`, &obj)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got := len(md.Undecoded()); got > 0 {
-				t.Fatal("expected no undecoded keys")
-			}
+			require.NoError(t, err)
+			require.Empty(t, md.Undecoded())
 		})
 	})
 }
@@ -143,13 +100,8 @@ func TestSecretBoxKeyUnmarshalText(t *testing.T) {
 
 	var key secretBoxKey
 	err := (&key).UnmarshalText([]byte(s))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if exp, got := s, key.String(); exp != got {
-		t.Fatalf("expected %q, got %q", exp, got)
-	}
+	require.NoError(t, err)
+	require.Equal(t, s, key.String())
 }
 
 func TestSecretBox(t *testing.T) {
@@ -159,10 +111,6 @@ func TestSecretBox(t *testing.T) {
 
 	box := secretBoxSeal(data, k)
 	decrypted, ok := secretBoxOpen(box, k)
-	if !ok {
-		t.Fatal("expected to open the box")
-	}
-	if exp, got := data, decrypted; !bytes.Equal(exp, got) {
-		t.Fatalf("expected %q but bot %q", string(exp), string(got))
-	}
+	require.True(t, ok, "expected to open the box")
+	require.Equal(t, data, decrypted)
 }

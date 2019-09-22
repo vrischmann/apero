@@ -8,8 +8,21 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+var ulidEntropy struct {
+	mu      sync.Mutex
+	entropy *ulid.MonotonicEntropy
+}
+
+func init() {
+	ulidEntropy.entropy = ulid.Monotonic(crypto_rand.Reader, 0)
+}
+
 func newULID() ulid.ULID {
-	return ulid.MustNew(ulid.Now(), crypto_rand.Reader)
+	ulidEntropy.mu.Lock()
+	id := ulid.MustNew(ulid.Now(), ulidEntropy.entropy)
+	ulidEntropy.mu.Unlock()
+
+	return id
 }
 
 type store interface {
@@ -24,22 +37,14 @@ type memStoreEntry struct {
 	content []byte
 }
 
-type memStoreEntries []memStoreEntry
-
-func (e memStoreEntries) Len() int      { return len(e) }
-func (e memStoreEntries) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
-func (e memStoreEntries) Less(i, j int) bool {
-	return e[i].id.Compare(e[j].id) < 0
-}
-
 type memStore struct {
 	mu      sync.Mutex
-	entries memStoreEntries
+	entries []memStoreEntry
 }
 
 func newMemStore() *memStore {
 	return &memStore{
-		entries: make(memStoreEntries, 0, 32),
+		entries: make([]memStoreEntry, 0, 32),
 	}
 }
 
@@ -51,7 +56,6 @@ func (s *memStore) Add(data []byte) (ulid.ULID, error) {
 
 	s.mu.Lock()
 	s.entries = append(s.entries, entry)
-	sort.Sort(s.entries)
 	s.mu.Unlock()
 
 	return entry.id, nil

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServerConfigUnmarshalText(t *testing.T) {
@@ -17,15 +17,10 @@ SignPublicKey = "GKlTcESb8Qm8KH+3wWoPWMf7DvVUWYzsKymvUKhhTo8="
 
 	var conf serverConfig
 	md, err := toml.Decode(data, &conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := len(md.Undecoded()); got > 0 {
-		t.Fatal("expected no undecoded keys")
-	}
-	if err := conf.Validate(); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
+	require.Empty(t, md.Undecoded())
+	require.NoError(t, conf.Validate())
 }
 
 func TestServerClient(t *testing.T) {
@@ -62,26 +57,16 @@ func TestServerClient(t *testing.T) {
 		}
 
 		err := client.doCopy(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		entries, err := server.st.ListAll()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(entries) != 1 {
-			t.Fatalf("expected one entry in the store, got %d", len(entries))
-		}
+		require.NoError(t, err)
+		require.NotEmpty(t, entries)
 
 		entry, err := server.st.Pop()
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
-		if exp, got := content, entry; !bytes.Equal(exp, got) {
-			t.Fatalf("expected entry to be %s, got %s", string(exp), string(got))
-		}
+		require.Equal(t, content, entry)
 	})
 
 	t.Run("move", func(t *testing.T) {

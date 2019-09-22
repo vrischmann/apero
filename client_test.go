@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClientConfigUnmarshalText(t *testing.T) {
@@ -17,13 +18,8 @@ SignPublicKey = "e/iy3khVoXJk1K1vttBigrxsA0FSVqpJl+PrKolzucM="
 
 	var conf clientConfig
 	md, err := toml.Decode(data, &conf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := len(md.Undecoded()); got > 0 {
-		t.Fatal("expected no undecoded keys")
-	}
-	if err := conf.Validate(); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
+	require.Empty(t, md.Undecoded())
+	require.NoError(t, conf.Validate())
 }

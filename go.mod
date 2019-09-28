@@ -7,6 +7,6 @@ require (
 	github.com/oklog/ulid/v2 v2.0.2
 	github.com/peterbourgon/ff v1.6.0
 	github.com/stretchr/testify v1.4.0
-	github.com/vrischmann/hutil/v2 v2.0.3-0.20190913200133-78a33edd7c56
+	github.com/vrischmann/hutil/v2 v2.0.3
 	golang.org/x/crypto v0.0.0-20190820162420-60c769a6c586
 )

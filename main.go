@@ -47,8 +47,8 @@ var (
 	serveFlags = flag.NewFlagSet("serve", flag.ExitOnError)
 
 	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
-	genconfigClientConfig = genconfigFlags.String("client-config", "client.toml", "File path for the client config")
-	genconfigServerConfig = genconfigFlags.String("server-config", "client.toml", "File path for the server config")
+	genconfigClientConfig = genconfigFlags.String("client-config", "./client.toml", "File path for the client config")
+	genconfigServerConfig = genconfigFlags.String("server-config", "./server.toml", "File path for the server config")
 )
 
 func runCopy(args []string) error {

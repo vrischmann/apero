@@ -34,18 +34,23 @@ func (c serverConfig) Validate() error {
 type server struct {
 	conf serverConfig
 	st   store
+
+	ui *uiServer
 }
 
 func newServer(conf serverConfig, st store) *server {
 	return &server{
 		conf: conf,
 		st:   st,
+		ui:   newUIServer(),
 	}
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	head, _ := hutil.ShiftPath(req.URL.Path)
+	head, tail := hutil.ShiftPath(req.URL.Path)
 	switch head {
+	case "u":
+		s.ui.handle(w, req, tail)
 	case "copy":
 		s.handleCopy(w, req)
 	case "move":

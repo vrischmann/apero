@@ -6,14 +6,17 @@ import (
 	"github.com/vrischmann/hutil/v2"
 )
 
-type uiServer struct {
+type uiHandler struct {
+	conf serverConfig
 }
 
-func newUIServer() *uiServer {
-	return &uiServer{}
+func newUIHandler(conf serverConfig) *uiHandler {
+	return &uiHandler{
+		conf: conf,
+	}
 }
 
-func (s *uiServer) handle(w http.ResponseWriter, req *http.Request, tail string) {
+func (s *uiHandler) handle(w http.ResponseWriter, req *http.Request, tail string) {
 	head, tail := hutil.ShiftPath(tail)
 	switch head {
 	case "":
@@ -21,6 +24,6 @@ func (s *uiServer) handle(w http.ResponseWriter, req *http.Request, tail string)
 	}
 }
 
-func (s *uiServer) handleIndex(w http.ResponseWriter, req *http.Request) {
+func (s *uiHandler) handleIndex(w http.ResponseWriter, req *http.Request) {
 
 }

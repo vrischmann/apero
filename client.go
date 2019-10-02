@@ -50,16 +50,16 @@ func (c *client) makeURL(path string) string {
 }
 
 func (c *client) doCopy(req copyRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodPost, http.StatusAccepted, "/copy")
+	return c.doRequest(req, http.MethodPost, http.StatusAccepted, "/api/v1/copy")
 }
 func (c *client) doMove(req moveRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodDelete, http.StatusOK, "/move")
+	return c.doRequest(req, http.MethodDelete, http.StatusOK, "/api/v1/move")
 }
 func (c *client) doPaste(req pasteRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodGet, http.StatusOK, "/paste")
+	return c.doRequest(req, http.MethodGet, http.StatusOK, "/api/v1/paste")
 }
 func (c *client) doList(req listRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodGet, http.StatusOK, "/list")
+	return c.doRequest(req, http.MethodGet, http.StatusOK, "/api/v1/list")
 }
 
 func (c *client) doRequest(req interface{}, method string, expCode int, path string) ([]byte, error) {

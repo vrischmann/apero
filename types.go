@@ -15,8 +15,8 @@ import (
 //
 // The content must not be empty but there's no other constraint otherwise.
 type copyRequest struct {
-	Signature []byte
-	Content   []byte
+	Signature []byte `json:"signature"`
+	Content   []byte `json:"content"`
 }
 
 // Validate validates the request parameters.
@@ -31,8 +31,8 @@ func (r copyRequest) Validate() error {
 }
 
 type moveRequest struct {
-	Signature []byte
-	ID        ulid.ULID
+	Signature []byte    `json:"signature"`
+	ID        ulid.ULID `json:"id"`
 }
 
 // Validate validates the request parameters.
@@ -44,8 +44,8 @@ func (r moveRequest) Validate() error {
 }
 
 type pasteRequest struct {
-	Signature []byte
-	ID        ulid.ULID
+	Signature []byte    `json:"signature"`
+	ID        ulid.ULID `json:"id"`
 }
 
 // Validate validates the request parameters.
@@ -57,7 +57,7 @@ func (r pasteRequest) Validate() error {
 }
 
 type listRequest struct {
-	Signature []byte
+	Signature []byte `json:"signature"`
 }
 
 // Validate validates the request parameters.
@@ -69,5 +69,5 @@ func (r listRequest) Validate() error {
 }
 
 type listResponse struct {
-	Entries []ulid.ULID
+	Entries []ulid.ULID `json:"entries"`
 }

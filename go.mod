@@ -8,6 +8,6 @@ require (
 	github.com/peterbourgon/ff v1.6.0
 	github.com/stretchr/testify v1.4.0
 	github.com/vrischmann/hutil/v2 v2.0.3
-	golang.org/x/crypto v0.0.0-20190927123631-a832865fa7ad
-	golang.org/x/sys v0.0.0-20190927073244-c990c680b611 // indirect
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
 )

@@ -31,9 +31,10 @@ func TestServerClient(t *testing.T) {
 	conf.PSKey = newSecretBoxKey()
 	conf.SignPublicKey = publicKey
 
-	server := newServer(conf, newMemStore())
+	api := newAPIHandler(conf, newMemStore())
+	ui := newUIHandler(conf)
 
-	httpServer := httptest.NewServer(server)
+	httpServer := httptest.NewServer(serverHandler(api, ui))
 	defer httpServer.Close()
 
 	//
@@ -57,21 +58,21 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		entries, err := server.st.ListAll()
+		entries, err := api.st.ListAll()
 		require.NoError(t, err)
 		require.NotEmpty(t, entries)
 		expID := entries[0]
 
 		require.Equal(t, expID[:], body[:])
 
-		entry, err := server.st.RemoveFirst()
+		entry, err := api.st.RemoveFirst()
 		require.NoError(t, err)
 
 		require.Equal(t, content, entry)
 	})
 
 	t.Run("move-oldest", func(t *testing.T) {
-		_, err := server.st.Add([]byte("yoo"))
+		_, err := api.st.Add([]byte("yoo"))
 		require.NoError(t, err)
 
 		//
@@ -85,14 +86,14 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		entries, err := server.st.ListAll()
+		entries, err := api.st.ListAll()
 		require.NoError(t, err)
 		require.Empty(t, entries)
 	})
 
 	t.Run("move-specific", func(t *testing.T) {
-		oldestID, _ := server.st.Add([]byte("yoo"))
-		id, _ := server.st.Add([]byte("yezi"))
+		oldestID, _ := api.st.Add([]byte("yoo"))
+		id, _ := api.st.Add([]byte("yezi"))
 
 		//
 
@@ -107,15 +108,15 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		entries, err := server.st.ListAll()
+		entries, err := api.st.ListAll()
 		require.NoError(t, err)
 		require.Equal(t, entries[0], oldestID)
 
-		server.st.RemoveFirst() // cleanup for the next test
+		api.st.RemoveFirst() // cleanup for the next test
 	})
 
 	t.Run("paste-oldest", func(t *testing.T) {
-		id, _ := server.st.Add([]byte("yoo"))
+		id, _ := api.st.Add([]byte("yoo"))
 
 		//
 
@@ -128,17 +129,17 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		entries, err := server.st.ListAll()
+		entries, err := api.st.ListAll()
 		require.NoError(t, err)
 		require.Equal(t, 1, len(entries))
 		require.Equal(t, id, entries[0])
 
-		server.st.RemoveFirst() // cleanup for the next test
+		api.st.RemoveFirst() // cleanup for the next test
 	})
 
 	t.Run("paste-specific", func(t *testing.T) {
-		oldestID, _ := server.st.Add([]byte("yoo"))
-		id, _ := server.st.Add([]byte("yeoa"))
+		oldestID, _ := api.st.Add([]byte("yoo"))
+		id, _ := api.st.Add([]byte("yeoa"))
 
 		//
 
@@ -153,20 +154,20 @@ func TestServerClient(t *testing.T) {
 
 		//
 
-		entries, err := server.st.ListAll()
+		entries, err := api.st.ListAll()
 		require.NoError(t, err)
 		require.Equal(t, 2, len(entries))
 		require.Equal(t, oldestID, entries[0])
 		require.Equal(t, id, entries[1])
 
-		server.st.RemoveFirst() // cleanup for the next test
-		server.st.RemoveFirst()
+		api.st.RemoveFirst() // cleanup for the next test
+		api.st.RemoveFirst()
 	})
 
 	t.Run("list", func(t *testing.T) {
-		id1, _ := server.st.Add([]byte("foo1"))
-		id2, _ := server.st.Add([]byte("foo2"))
-		id3, _ := server.st.Add([]byte("foo3"))
+		id1, _ := api.st.Add([]byte("foo1"))
+		id2, _ := api.st.Add([]byte("foo2"))
+		id3, _ := api.st.Add([]byte("foo3"))
 
 		//
 

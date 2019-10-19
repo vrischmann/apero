@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/oklog/ulid/v2"
 	"github.com/vrischmann/hutil/v2"
 )
 
@@ -31,20 +30,27 @@ func (c serverConfig) Validate() error {
 	return nil
 }
 
-type server struct {
+type apiHandler struct {
 	conf serverConfig
 	st   store
 }
 
-func newServer(conf serverConfig, st store) *server {
-	return &server{
+func newAPIHandler(conf serverConfig, st store) *apiHandler {
+	return &apiHandler{
 		conf: conf,
 		st:   st,
 	}
 }
 
-func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	head, _ := hutil.ShiftPath(req.URL.Path)
+func (s *apiHandler) handle(w http.ResponseWriter, req *http.Request, path string) {
+	head, tail := hutil.ShiftPath(path)
+	if head != "v1" {
+		http.Error(w, fmt.Sprintf("bad version %s", head), http.StatusBadRequest)
+		return
+	}
+
+	head, _ = hutil.ShiftPath(tail)
+
 	switch head {
 	case "copy":
 		s.handleCopy(w, req)
@@ -59,7 +65,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
+func (s *apiHandler) handleCopy(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
@@ -117,7 +123,7 @@ func (s *server) handleCopy(w http.ResponseWriter, req *http.Request) {
 	w.Write(respData)
 }
 
-func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
+func (s *apiHandler) handleMove(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodDelete {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
@@ -189,7 +195,7 @@ func (s *server) handleMove(w http.ResponseWriter, req *http.Request) {
 	w.Write(respData)
 }
 
-func (s *server) handlePaste(w http.ResponseWriter, req *http.Request) {
+func (s *apiHandler) handlePaste(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
@@ -261,7 +267,7 @@ func (s *server) handlePaste(w http.ResponseWriter, req *http.Request) {
 	w.Write(respData)
 }
 
-func (s *server) handleList(w http.ResponseWriter, req *http.Request) {
+func (s *apiHandler) handleList(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
@@ -329,19 +335,4 @@ func (s *server) handleList(w http.ResponseWriter, req *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(respData)
-}
-
-func isEmptyULID(id ulid.ULID) bool {
-	var emptyID ulid.ULID
-	return id == emptyID
-}
-
-func responseStatusCode(w http.ResponseWriter, code int) {
-	w.WriteHeader(code)
-	w.Write([]byte(http.StatusText(code)))
-}
-
-func responseString(w http.ResponseWriter, s string, code int) {
-	w.WriteHeader(code)
-	w.Write([]byte(s))
 }

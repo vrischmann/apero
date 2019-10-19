@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/ed25519"
 	crypto_rand "crypto/rand"
 	"encoding"
 	"encoding/base64"
@@ -9,7 +10,6 @@ import (
 	"io"
 	"log"
 
-	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 

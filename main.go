@@ -213,6 +213,18 @@ func runList(args []string) error {
 	return nil
 }
 
+func serverHandler(api *apiHandler, ui *uiHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		head, tail := hutil.ShiftPath(req.URL.Path)
+		switch head {
+		case "api":
+			api.handle(w, req, tail)
+		default:
+			ui.handle(w, req, req.URL.Path)
+		}
+	}
+}
+
 func runServe(args []string) error {
 	var conf serverConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
@@ -225,14 +237,21 @@ func runServe(args []string) error {
 	//
 
 	// TODO(vincent): configure this based on conf
-	server := newServer(conf, newMemStore())
+	api := newAPIHandler(conf, newMemStore())
+	ui := newUIHandler(conf)
 
 	var chain hutil.Chain
 	chain.Use(hutil.NewLoggingMiddleware(func(req *http.Request, statusCode int, responseSize int, elapsed time.Duration) {
 		log.Printf("[%3d] %s %d %s", statusCode, req.URL.Path, responseSize, elapsed)
 	}))
 
-	return http.ListenAndServe(conf.ListenAddr, chain.Handler(server))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/style.css", func(w http.ResponseWriter, req *http.Request) {
+		http.ServeFile(w, req, "./ui/style.css")
+	})
+	mux.HandleFunc("/", serverHandler(api, ui))
+
+	return http.ListenAndServe(conf.ListenAddr, chain.Handler(mux))
 }
 
 func runGenconfig(args []string) error {

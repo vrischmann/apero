@@ -1,10 +1,10 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"fmt"
 
 	"github.com/oklog/ulid/v2"
-	"golang.org/x/crypto/ed25519"
 )
 
 // copyRequest is a request to copy content to the server.

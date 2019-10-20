@@ -280,6 +280,12 @@ func (s *apiHandler) handleList(w http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
+	if len(data) == 0 {
+		log.Printf("no data in list request")
+		responseStatusCode(w, http.StatusBadRequest)
+		return
+	}
+
 	data, ok := secretBoxOpen(data, s.conf.PSKey)
 	if !ok {
 		log.Printf("unable to open box")

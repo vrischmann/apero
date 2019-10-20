@@ -45,7 +45,7 @@ func newAPIHandler(conf serverConfig, st store) *apiHandler {
 func (s *apiHandler) handle(w http.ResponseWriter, req *http.Request, path string) {
 	head, tail := hutil.ShiftPath(path)
 	if head != "v1" {
-		http.Error(w, fmt.Sprintf("bad version %s", head), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%q is not a valid version", head), http.StatusBadRequest)
 		return
 	}
 

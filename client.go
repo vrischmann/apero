@@ -59,7 +59,7 @@ func (c *client) doPaste(req pasteRequest) ([]byte, error) {
 	return c.doRequest(req, http.MethodGet, http.StatusOK, "/api/v1/paste")
 }
 func (c *client) doList(req listRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodGet, http.StatusOK, "/api/v1/list")
+	return c.doRequest(req, http.MethodPost, http.StatusOK, "/api/v1/list")
 }
 
 func (c *client) doRequest(req interface{}, method string, expCode int, path string) ([]byte, error) {

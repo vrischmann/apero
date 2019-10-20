@@ -268,7 +268,7 @@ func (s *apiHandler) handlePaste(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *apiHandler) handleList(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
+	if req.Method != http.MethodPost {
 		responseStatusCode(w, http.StatusMethodNotAllowed)
 		return
 	}

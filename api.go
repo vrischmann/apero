@@ -297,7 +297,7 @@ func (s *apiHandler) handleList(w http.ResponseWriter, req *http.Request) {
 
 	var payload listRequest
 	if err := json.Unmarshal(data, &payload); err != nil {
-		log.Printf("unable to unmarshal list request payload. err: %v", err)
+		log.Printf("unable to unmarshal list request payload %q. err: %v", string(data), err)
 		responseString(w, "invalid list request", http.StatusBadRequest)
 		return
 	}

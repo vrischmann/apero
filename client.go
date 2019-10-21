@@ -56,7 +56,7 @@ func (c *client) doMove(req moveRequest) ([]byte, error) {
 	return c.doRequest(req, http.MethodDelete, http.StatusOK, "/api/v1/move")
 }
 func (c *client) doPaste(req pasteRequest) ([]byte, error) {
-	return c.doRequest(req, http.MethodGet, http.StatusOK, "/api/v1/paste")
+	return c.doRequest(req, http.MethodPost, http.StatusOK, "/api/v1/paste")
 }
 func (c *client) doList(req listRequest) ([]byte, error) {
 	return c.doRequest(req, http.MethodPost, http.StatusOK, "/api/v1/list")

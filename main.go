@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -15,7 +16,9 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/peterbourgon/ff"
 	"github.com/peterbourgon/ff/ffcli"
+	"github.com/pkg/browser"
 	"github.com/vrischmann/hutil/v2"
+	"rsc.io/qr"
 )
 
 func fatal(args ...interface{}) {
@@ -49,6 +52,7 @@ var (
 	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
 	genconfigClientConfig = genconfigFlags.String("client-config", "./client.toml", "File path for the client config")
 	genconfigServerConfig = genconfigFlags.String("server-config", "./server.toml", "File path for the server config")
+	genconfigServeQRCode  = genconfigFlags.Bool("serve-qr-code", false, "Opens a page with a QR code containing the client config. Useful to setup the Android app")
 )
 
 func runCopy(args []string) error {
@@ -293,6 +297,34 @@ func runGenconfig(args []string) error {
 		return err
 	}
 	f.Close()
+
+	//
+
+	if *genconfigServeQRCode {
+		var buf bytes.Buffer
+		if err := toml.NewEncoder(&buf).Encode(clientConf); err != nil {
+			return err
+		}
+
+		// Encode the conf as a QR Code
+		code, err := qr.Encode(buf.String(), qr.M)
+		if err != nil {
+			return err
+		}
+
+		http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Content-Type", "image/png")
+			http.ServeContent(w, req, "", time.Now(), bytes.NewReader(code.PNG()))
+		})
+
+		go func() {
+			if err := browser.OpenURL("http://localhost:5000"); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
+		http.ListenAndServe(":5000", nil)
+	}
 
 	return nil
 }

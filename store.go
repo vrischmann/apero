@@ -2,7 +2,10 @@ package main
 
 import (
 	crypto_rand "crypto/rand"
+	"errors"
+	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/oklog/ulid/v2"
@@ -34,9 +37,19 @@ type store interface {
 	ListAll() ([]ulid.ULID, error)
 }
 
+var errEntryNotFound = errors.New("entry not found")
+
 type memStoreEntry struct {
 	id      ulid.ULID
 	content []byte
+}
+
+func (e memStoreEntry) String() string {
+	return fmt.Sprintf("{id: %s, content: %s}", e.id.String(), string(e.content))
+}
+
+func (e *memStoreEntry) IsValid() bool {
+	return len(e.content) > 0 && !isEmptyULID(e.id)
 }
 
 type memStore struct {
@@ -48,6 +61,18 @@ func newMemStore() *memStore {
 	return &memStore{
 		entries: make([]memStoreEntry, 0, 32),
 	}
+}
+
+func (s *memStore) Dump() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var builder strings.Builder
+	for _, entry := range s.entries {
+		fmt.Fprintf(&builder, "entry: %s\n", entry)
+	}
+
+	return builder.String()
 }
 
 func (s *memStore) Add(data []byte) (ulid.ULID, error) {
@@ -81,22 +106,27 @@ func (s *memStore) CopyFirst() ([]byte, error) {
 
 func (s *memStore) Copy(id ulid.ULID) ([]byte, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
-	pos := sort.Search(len(s.entries), func(i int) bool {
-		return s.entries[i].id == id
-	})
-
-	if pos < len(s.entries) && s.entries[pos].id == id {
-		entry := s.entries[pos]
-
-		tmp := make([]byte, len(entry.content))
-		copy(tmp, entry.content)
-
-		return tmp, nil
+	var entry memStoreEntry
+	for _, v := range s.entries {
+		if v.id == id {
+			entry = v
+			break
+		}
 	}
 
-	return nil, nil
+	s.mu.Unlock()
+
+	//
+
+	if !entry.IsValid() {
+		return nil, errEntryNotFound
+	}
+
+	tmp := make([]byte, len(entry.content))
+	copy(tmp, entry.content)
+
+	return tmp, nil
 }
 
 func (s *memStore) RemoveFirst() ([]byte, error) {
@@ -117,19 +147,27 @@ func (s *memStore) Remove(id ulid.ULID) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	pos := sort.Search(len(s.entries), func(i int) bool {
-		return s.entries[i].id == id
-	})
-
-	if pos < len(s.entries) && s.entries[pos].id == id {
-		entry := s.entries[pos]
-
-		s.entries = append(s.entries[:pos], s.entries[pos+1:]...)
-
-		return entry.content, nil
+	var (
+		pos   int
+		entry memStoreEntry
+	)
+	for i, v := range s.entries {
+		if v.id == id {
+			pos = i
+			entry = v
+			break
+		}
 	}
 
-	return nil, nil
+	//
+
+	if !entry.IsValid() {
+		return nil, errEntryNotFound
+	}
+
+	s.entries = append(s.entries[:pos], s.entries[pos+1:]...)
+
+	return entry.content, nil
 }
 
 func (s *memStore) ListAll() ([]ulid.ULID, error) {

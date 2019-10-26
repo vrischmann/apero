@@ -24,6 +24,9 @@ func (c clientConfig) Validate() error {
 	if !c.PSKey.IsValid() {
 		return fmt.Errorf("ps key is invalid")
 	}
+	if !c.EncryptKey.IsValid() {
+		return fmt.Errorf("encrypt key is invalid")
+	}
 	if !c.SignPrivateKey.IsValid() {
 		return fmt.Errorf("sign public key is invalid")
 	}

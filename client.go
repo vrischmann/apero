@@ -86,7 +86,7 @@ func (c *client) doRequest(req interface{}, method string, expCode int, path str
 		return nil, fmt.Errorf("unable to copy to staging server. body=%q err: %v", maybeReadHTTPResponseBody(resp), err)
 	}
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
+		return nil, errEntryNotFound
 	}
 	if resp.StatusCode != expCode {
 		return nil, fmt.Errorf("invalid status code %s. body=%q", resp.Status, maybeReadHTTPResponseBody(resp))

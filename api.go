@@ -176,23 +176,19 @@ func (s *apiHandler) handleMove(w http.ResponseWriter, req *http.Request) {
 		content, err = s.st.Remove(payload.ID)
 	}
 
-	if err != nil {
+	switch {
+	case err == errEntryNotFound:
+		responseStatusCode(w, http.StatusNotFound)
+		return
+	case err != nil:
 		log.Printf("unable to retrieve entry. err: %v", err)
 		responseString(w, "internal server error", http.StatusInternalServerError)
 		return
+	default:
+		respData := secretBoxSeal(content, s.conf.PSKey)
+		w.WriteHeader(http.StatusOK)
+		w.Write(respData)
 	}
-
-	if len(content) == 0 {
-		responseStatusCode(w, http.StatusNotFound)
-		return
-	}
-
-	//
-
-	respData := secretBoxSeal(content, s.conf.PSKey)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(respData)
 }
 
 func (s *apiHandler) handlePaste(w http.ResponseWriter, req *http.Request) {
@@ -248,23 +244,19 @@ func (s *apiHandler) handlePaste(w http.ResponseWriter, req *http.Request) {
 		content, err = s.st.Copy(payload.ID)
 	}
 
-	if err != nil {
+	switch {
+	case err == errEntryNotFound:
+		responseStatusCode(w, http.StatusNotFound)
+		return
+	case err != nil:
 		log.Printf("unable to retrieve entry. err: %v", err)
 		responseString(w, "internal server error", http.StatusInternalServerError)
 		return
+	default:
+		respData := secretBoxSeal(content, s.conf.PSKey)
+		w.WriteHeader(http.StatusOK)
+		w.Write(respData)
 	}
-
-	if len(content) == 0 {
-		responseStatusCode(w, http.StatusNotFound)
-		return
-	}
-
-	//
-
-	respData := secretBoxSeal(content, s.conf.PSKey)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(respData)
 }
 
 func (s *apiHandler) handleList(w http.ResponseWriter, req *http.Request) {

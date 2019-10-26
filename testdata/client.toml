@@ -1,0 +1,5 @@
+Endpoint = "http://localhost:7568"
+PSKey = "C3KI/oQFnYESrQ/Ah2TwXoc4w7PmGSp+BfJuVhOuPxQ="
+EncryptKey = "YcqugLBKF8EqgkxuZf9+ZdphGyPiqgpEMplei+edwvI="
+SignPublicKey = "X5QvxgA90vbYtRd5A13N1kjExtFxS9kBC8zytJOtgHI="
+SignPrivateKey = "7YC1gqaFUdEtUV66JJ2U/UzUnUBRf2jmR5nxzcXV1vZflC/GAD3S9ti1F3kDXc3WSMTG0XFL2QELzPK0k62Acg=="

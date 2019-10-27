@@ -186,6 +186,10 @@ func secretBoxSeal(data []byte, key secretBoxKey) []byte {
 }
 
 func secretBoxOpen(box []byte, key secretBoxKey) ([]byte, bool) {
+	if len(box) < 25 {
+		return nil, false
+	}
+
 	var nonce [24]byte
 	copy(nonce[:], box[:24])
 

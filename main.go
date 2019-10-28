@@ -11,10 +11,13 @@ import (
 	"os"
 	"time"
 
+	"rischmann.fr/apero/internal/ui"
+
 	"github.com/BurntSushi/toml"
 	"github.com/oklog/ulid/v2"
 	"github.com/peterbourgon/ff"
 	"github.com/peterbourgon/ff/ffcli"
+	"github.com/pkg/browser"
 	"github.com/vrischmann/hutil/v2"
 )
 
@@ -297,6 +300,40 @@ func runGenconfig(args []string) error {
 	return nil
 }
 
+func runProvision(args []string) error {
+	var conf clientConfig
+	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
+		return err
+	}
+	if err := conf.Validate(); err != nil {
+		return err
+	}
+
+	// Convert the client config into the provisioning data
+
+	data := makeProvisioningData(conf)
+
+	log.Printf("data: %v", data)
+
+	// Prepare the HTTP server
+
+	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		tmpl := ui.ParseTemplate("/provisioning.html")
+		if err := tmpl.Execute(w, data); err != nil {
+			log.Fatal(err)
+		}
+	})
+
+	go func() {
+		if err := browser.OpenURL("http://localhost:5000"); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	return http.ListenAndServe(":5000", nil)
+}
+
 func main() {
 	copyCommand := &ffcli.Command{
 		Name:      "copy",
@@ -364,12 +401,19 @@ The path can be changed with a flag:
 		Exec: runGenconfig,
 	}
 
+	provisionCommand := &ffcli.Command{
+		Name:      "provision",
+		Usage:     "apero provision",
+		ShortHelp: "launch the provisioning UI",
+		Exec:      runProvision,
+	}
+
 	root := &ffcli.Command{
 		Usage:       "apero [global flags] <subcommand> [flags] [args...]",
 		FlagSet:     globalFlags,
 		Options:     []ff.Option{ff.WithEnvVarPrefix("APERO")},
 		LongHelp:    `Run a staging server or communicate with one`,
-		Subcommands: []*ffcli.Command{copyCommand, moveCommand, pasteCommand, listCommand, serveCommand, genconfigCommand},
+		Subcommands: []*ffcli.Command{copyCommand, moveCommand, pasteCommand, listCommand, serveCommand, genconfigCommand, provisionCommand},
 		Exec: func(args []string) error {
 			return errors.New("specify a subcommand")
 		},

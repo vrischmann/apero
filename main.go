@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -311,15 +313,29 @@ func runProvision(args []string) error {
 
 	// Convert the client config into the provisioning data
 
-	data := makeProvisioningData(conf)
-
-	log.Printf("data: %v", data)
+	var data struct {
+		PSKey          string
+		EncryptKey     string
+		SignPublicKey  string
+		SignPrivateKey string
+	}
+	data.PSKey = hex.EncodeToString(conf.PSKey[:])
+	data.EncryptKey = hex.EncodeToString(conf.EncryptKey[:])
+	data.SignPublicKey = hex.EncodeToString(conf.SignPublicKey[:])
+	data.SignPrivateKey = hex.EncodeToString(conf.SignPrivateKey[:])
 
 	// Prepare the HTTP server
 
+	fm := template.FuncMap{
+		"isnumber": func(r rune) bool { return r >= '0' && r <= '9' },
+		"isalpha":  func(r rune) bool { return r >= 'a' && r <= 'z' },
+		"runes":    func(s string) []rune { return []rune(s) },
+	}
+
 	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		tmpl := ui.ParseTemplate("/provisioning.html")
+		tmpl := ui.ParseTemplate(fm, "/partials/provisioningkey.html", "/provisioning.html")
+
 		if err := tmpl.Execute(w, data); err != nil {
 			log.Fatal(err)
 		}

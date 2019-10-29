@@ -1,3 +1,4 @@
+{{ define "root" }}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,19 +7,19 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Apéro provisioning</title>
 
-    <link rel="stylesheet" href="provisioning.css">
+    <link rel="stylesheet" href="provisioning.css" />
   </head>
   <body>
-    <div>
-      <h1>Pre-shared key</h1>
-        <h3>{{ index .PSKey 0 }}</h3>
-        <h3>{{ index .PSKey 1 }}</h3>
-        <h3>{{ index .PSKey 2 }}</h3>
-        <h3>{{ index .PSKey 3 }}</h3>
-        <h3>{{ index .PSKey 4 }}</h3>
-        <h3>{{ index .PSKey 5 }}</h3>
-        <h3>{{ index .PSKey 6 }}</h3>
-        <h3>{{ index .PSKey 7 }}</h3>
+    <div class="container">
+      <div class="key">
+        <h1>Pre-shared key</h1>
+        {{ template "key" (.PSKey) }}
+      </div>
+      <div class="key">
+        <h1>Encryption key</h1>
+        {{ template "key" (.EncryptKey) }}
+      </div>
     </div>
   </body>
 </html>
+{{ end }}

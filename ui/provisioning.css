@@ -2,13 +2,16 @@ html,
 body {
   padding: 0;
   margin: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: max-content;
 }
 
 body {
   font-family: sans-serif;
   margin: 40px auto;
   line-height: 1.6;
-  font-size: 18px;
+  font-size: 1.7em;
   color: #444;
   padding: 0 10px;
 }
@@ -17,4 +20,52 @@ h1,
 h2,
 h3 {
   line-height: 1.2;
+}
+
+.key {
+  display: grid;
+}
+
+.key h1 {
+  text-align: center;
+  
+  border-left: 0.4em;
+  border-left-color: black;
+  border-left-style: solid;
+  border-right: 0.4em;
+  border-right-color: black;
+  border-right-style: solid;
+
+  margin-bottom: 0;
+}
+
+.key-data :nth-child(even) {
+  background-color: #eee;
+}
+.key-data {
+  display: grid;
+
+  grid-template-columns: repeat(19, [digit] 58px);
+
+  border: black 2px solid;
+  font-family: monospace;
+  font-size: 2em;
+  margin-top: 1em;
+}
+
+.key-data div {
+  text-align: center;
+  width: 50px;  
+  padding: 4px;
+}
+
+.key-data span {
+  display: block;
+  text-align: center;
+  font-size: 0.38em;
+  color: gray;
+}
+
+.key-data .number {
+  color: blue;
 }

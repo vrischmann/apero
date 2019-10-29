@@ -327,9 +327,9 @@ func runProvision(args []string) error {
 	// Prepare the HTTP server
 
 	fm := template.FuncMap{
-		"isnumber": func(r rune) bool { return r >= '0' && r <= '9' },
-		"isalpha":  func(r rune) bool { return r >= 'a' && r <= 'z' },
-		"runes":    func(s string) []rune { return []rune(s) },
+		"isalpha": func(r rune) bool { return r >= 'a' && r <= 'z' },
+		"runes":   func(s string) []rune { return []rune(s) },
+		"addone":  func(i int) int { return i + 1 },
 	}
 
 	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))

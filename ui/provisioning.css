@@ -51,7 +51,7 @@ h3 {
 .key-data {
   display: grid;
 
-  grid-template-columns: repeat(19, [digit] 48px);
+  grid-template-columns: repeat(19, [digit] 1fr);
 
   border: black 2px solid;
   font-family: monospace;

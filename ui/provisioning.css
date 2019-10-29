@@ -27,6 +27,11 @@ h3 {
   row-gap: 1em;
 }
 
+.endpoint {
+  grid-column: 1 / span 2;
+  text-align: center;
+}
+
 .key {
   display: grid;
   align-items: start;

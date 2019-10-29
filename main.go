@@ -314,11 +314,13 @@ func runProvision(args []string) error {
 	// Convert the client config into the provisioning data
 
 	var data struct {
+		Endpoint       string
 		PSKey          string
 		EncryptKey     string
 		SignPublicKey  string
 		SignPrivateKey string
 	}
+	data.Endpoint = conf.Endpoint
 	data.PSKey = hex.EncodeToString(conf.PSKey[:])
 	data.EncryptKey = hex.EncodeToString(conf.EncryptKey[:])
 	data.SignPublicKey = hex.EncodeToString(conf.SignPublicKey[:])

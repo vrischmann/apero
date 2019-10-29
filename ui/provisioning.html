@@ -11,6 +11,9 @@
   </head>
   <body>
     <div class="container">
+      <div class="endpoint">
+        <h1>{{ .Endpoint }}</h1>
+      </div>
       <div class="key">
         <h1>Pre-shared key</h1>
         {{ template "key" (.PSKey) }}

@@ -19,6 +19,14 @@
         <h1>Encryption key</h1>
         {{ template "key" (.EncryptKey) }}
       </div>
+      <div class="key">
+        <h1>Sign private key</h1>
+        {{ template "key" (.SignPrivateKey) }}
+      </div>
+      <div class="key">
+        <h1>Sign public key</h1>
+        {{ template "key" (.SignPublicKey) }}
+      </div>
     </div>
   </body>
 </html>

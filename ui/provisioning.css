@@ -9,11 +9,9 @@ body {
 
 body {
   font-family: sans-serif;
-  margin: 40px auto;
   line-height: 1.6;
   font-size: 1.7em;
   color: #444;
-  padding: 0 10px;
 }
 
 h1,
@@ -22,21 +20,29 @@ h3 {
   line-height: 1.2;
 }
 
+.container {
+  display: grid;
+  grid-template-columns: repeat(2, [key] 1fr);
+  column-gap: 1em;
+  row-gap: 1em;
+}
+
 .key {
   display: grid;
+  align-items: start;
+  align-content: start;
 }
 
 .key h1 {
   text-align: center;
-  
-  border-left: 0.4em;
-  border-left-color: black;
-  border-left-style: solid;
-  border-right: 0.4em;
-  border-right-color: black;
-  border-right-style: solid;
+
+  background-color: #eee;
+  color: black;
 
   margin-bottom: 0;
+  padding-top: 0.15em;
+  padding-bottom: 0.15em;
+  margin-top: 0;
 }
 
 .key-data :nth-child(even) {
@@ -45,17 +51,16 @@ h3 {
 .key-data {
   display: grid;
 
-  grid-template-columns: repeat(19, [digit] 58px);
+  grid-template-columns: repeat(19, [digit] 48px);
 
   border: black 2px solid;
   font-family: monospace;
   font-size: 2em;
-  margin-top: 1em;
 }
 
 .key-data div {
   text-align: center;
-  width: 50px;  
+  width: 40px;
   padding: 4px;
 }
 

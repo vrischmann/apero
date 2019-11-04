@@ -233,7 +233,7 @@ func serverHandler(api *apiHandler, ui *uiHandler) http.HandlerFunc {
 func runServe(args []string) error {
 	var conf serverConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		fatal("invalid toml config. err=%v", err)
+		fatalf("invalid toml config. err=%v", err)
 	}
 	if err := conf.Validate(); err != nil {
 		fatal(err)

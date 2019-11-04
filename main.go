@@ -59,7 +59,7 @@ var (
 func runCopy(args []string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		return err
+		return fmt.Errorf("invalid toml config. err=%v", err)
 	}
 	if err := conf.Validate(); err != nil {
 		return err
@@ -113,7 +113,7 @@ func runCopy(args []string) error {
 func doRunMoveOrPaste(args []string, action string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		return err
+		return fmt.Errorf("invalid toml config. err=%v", err)
 	}
 	if err := conf.Validate(); err != nil {
 		return err
@@ -178,7 +178,7 @@ func runPaste(args []string) error {
 func runList(args []string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		return err
+		return fmt.Errorf("invalid toml config. err=%v", err)
 	}
 	if err := conf.Validate(); err != nil {
 		return err
@@ -233,7 +233,7 @@ func serverHandler(api *apiHandler, ui *uiHandler) http.HandlerFunc {
 func runServe(args []string) error {
 	var conf serverConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
-		fatal(err)
+		fatal("invalid toml config. err=%v", err)
 	}
 	if err := conf.Validate(); err != nil {
 		fatal(err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	crypto_rand "crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -313,6 +315,53 @@ func keyToMnemonic(key []byte) string {
 	return s
 }
 
+func randomString() string {
+	var data [4]byte
+	if _, err := crypto_rand.Read(data[:]); err != nil {
+		log.Fatal(err)
+	}
+	return hex.EncodeToString(data[:])
+}
+
+func lanIPAddress() (string, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, iface := range ifaces {
+		// Ignore loopback interfaces
+		if iface.Flags&net.FlagLoopback == net.FlagLoopback {
+			continue
+		}
+		// Ignore down interfaces
+		if iface.Flags&net.FlagUp != net.FlagUp {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return "", err
+		}
+
+		for _, addr := range addrs {
+			v, ok := addr.(*net.IPNet)
+			if !ok {
+				continue
+			}
+
+			ip := v.IP.To4()
+			if ip == nil {
+				continue
+			}
+
+			return ip.String(), nil
+		}
+	}
+
+	return "", errors.New("no suitable LAN IP address")
+}
+
 func runProvision(args []string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
@@ -325,10 +374,8 @@ func runProvision(args []string) error {
 	// Convert the client config into the provisioning data
 
 	var data struct {
-		ContainerClassName string
-		KeyClassName       string
-
-		Endpoint string
+		ProvisioningURL string
+		Endpoint        string
 
 		Hex struct {
 			PSKey          string
@@ -343,6 +390,18 @@ func runProvision(args []string) error {
 			SignPrivateKey string
 		}
 	}
+
+	// Create a unique URL for LAN provisioning
+	localProvisioningPath := randomString()
+	ip, err := lanIPAddress()
+	if err != nil {
+		return fmt.Errorf("unable to get LAN IP address. err: %v", err)
+	}
+
+	data.ProvisioningURL = "http://" + ip + ":5000/" + localProvisioningPath
+
+	//
+
 	data.Endpoint = conf.Endpoint
 
 	data.Hex.PSKey = hex.EncodeToString(conf.PSKey[:])
@@ -361,6 +420,10 @@ func runProvision(args []string) error {
 		"runes":   func(s string) []rune { return []rune(s) },
 		"addone":  func(i int) int { return i + 1 },
 	}
+
+	http.HandleFunc(localProvisioningPath, func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("OK"))
+	})
 
 	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))
 	http.HandleFunc("/provisioning.js", ui.ServeFile("/provisioning.js"))

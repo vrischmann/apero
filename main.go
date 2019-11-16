@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -54,6 +55,8 @@ var (
 	genconfigFlags        = flag.NewFlagSet("genconfig", flag.ExitOnError)
 	genconfigClientConfig = genconfigFlags.String("client-config", "./client.toml", "File path for the client config")
 	genconfigServerConfig = genconfigFlags.String("server-config", "./server.toml", "File path for the server config")
+
+	provisionFlags = flag.NewFlagSet("provision", flag.ExitOnError)
 )
 
 func runCopy(args []string) error {
@@ -305,7 +308,7 @@ func runGenconfig(args []string) error {
 func keyToMnemonic(key []byte) string {
 	s, err := bip39.NewMnemonic(key)
 	if err != nil {
-		log.Fatalf("unable to encode key as a mnemonic words. err: %v", err)
+		log.Fatalf("unable to encode key as a mnemonic sentence. err: %v", err)
 	}
 	return s
 }
@@ -322,18 +325,34 @@ func runProvision(args []string) error {
 	// Convert the client config into the provisioning data
 
 	var data struct {
-		Endpoint       string
-		PSKey          string
-		EncryptKey     string
-		SignPublicKey  string
-		SignPrivateKey string
+		ContainerClassName string
+		KeyClassName       string
+
+		Endpoint string
+
+		Hex struct {
+			PSKey          string
+			EncryptKey     string
+			SignPublicKey  string
+			SignPrivateKey string
+		}
+		Mnemonic struct {
+			PSKey          string
+			EncryptKey     string
+			SignPublicKey  string
+			SignPrivateKey string
+		}
 	}
 	data.Endpoint = conf.Endpoint
 
-	data.PSKey = keyToMnemonic(conf.PSKey[:])
-	data.EncryptKey = keyToMnemonic(conf.EncryptKey[:])
-	data.SignPublicKey = keyToMnemonic(conf.SignPublicKey[:])
-	data.SignPrivateKey = keyToMnemonic(conf.SignPrivateKey[:32])
+	data.Hex.PSKey = hex.EncodeToString(conf.PSKey[:])
+	data.Hex.EncryptKey = hex.EncodeToString(conf.EncryptKey[:])
+	data.Hex.SignPublicKey = hex.EncodeToString(conf.SignPublicKey[:])
+	data.Hex.SignPrivateKey = hex.EncodeToString(conf.SignPrivateKey[:32])
+	data.Mnemonic.PSKey = keyToMnemonic(conf.PSKey[:])
+	data.Mnemonic.EncryptKey = keyToMnemonic(conf.EncryptKey[:])
+	data.Mnemonic.SignPublicKey = keyToMnemonic(conf.SignPublicKey[:])
+	data.Mnemonic.SignPrivateKey = keyToMnemonic(conf.SignPrivateKey[:32])
 
 	// Prepare the HTTP server
 
@@ -344,9 +363,9 @@ func runProvision(args []string) error {
 	}
 
 	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))
+	http.HandleFunc("/provisioning.js", ui.ServeFile("/provisioning.js"))
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		tmpl := ui.ParseTemplate(fm, "/partials/provisioningkey.html", "/provisioning.html")
-
+		tmpl := ui.ParseTemplate(fm, "/partials/provisioning-key.html", "/provisioning.html")
 		if err := tmpl.Execute(w, data); err != nil {
 			log.Fatal(err)
 		}
@@ -431,6 +450,7 @@ The path can be changed with a flag:
 	provisionCommand := &ffcli.Command{
 		Name:      "provision",
 		Usage:     "apero provision",
+		FlagSet:   provisionFlags,
 		ShortHelp: "launch the provisioning UI",
 		Exec:      runProvision,
 	}

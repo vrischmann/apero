@@ -19,7 +19,7 @@ func GetFile(path string) ([]byte, error) {
 
 	statikFS, err := fs.New()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return fs.ReadFile(statikFS, path)

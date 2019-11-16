@@ -1,0 +1,16 @@
+{{ define "hexkey" }}
+<div class="hexkey-data">
+{{ range $i, $b := (runes .) }}
+{{- if (isalpha $b) -}}
+<div class="alpha">{{ printf "%c" $b }}<span>{{ addone $i }}</span></div>
+{{- else -}}
+<div class="number">{{ printf "%c" $b }}<span>{{ addone $i }}</span></div>
+{{- end }}
+{{- end -}}
+</div>
+{{ end }}
+{{ define "mmkey" }}
+<div class="mmkey-data">
+{{ . }}
+</div>
+{{ end }}

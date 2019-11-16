@@ -4,7 +4,7 @@ body {
   margin: 0;
   margin-left: auto;
   margin-right: auto;
-  width: max-content;
+  width: 90%;
 }
 
 body {
@@ -20,7 +20,35 @@ h3 {
   line-height: 1.2;
 }
 
-.container {
+.header {
+  display: grid;
+  grid-template-columns: repeat(2, [link] 200px);
+  background-color: #333;
+}
+
+.header > a {
+  height: 50px;
+  text-align: center;
+  color: white;
+  background-color: #333;
+  text-decoration: none;
+}
+
+.header > a.active {
+  background: linear-gradient(180deg, #333 94%, orange 6%);
+}
+
+#container-hexkeys {
+  display: grid;
+  grid-template-areas:
+    "endpoint endpoint"
+    "pskey encryptionkey"
+    "publickey privatekey";
+  column-gap: 1em;
+  row-gap: 1em;
+}
+
+#container-mmkeys {
   display: grid;
   grid-template-areas: 
     "endpoint"
@@ -35,19 +63,24 @@ h3 {
 }
 
 .endpoint {
+  grid-area: endpoint;
   text-align: center;
 }
 
-.key {
+.mmkey {
   display: grid;
-
   align-items: start;
   align-content: start;
-
   width: 90vw;
 }
 
-.key h1 {
+.hexkey {
+  display: grid;
+  align-items: start;
+  align-content: start;
+}
+
+.hexkey h1, .mmkey h1 {
   text-align: center;
 
   background-color: #eee;
@@ -59,7 +92,7 @@ h3 {
   margin-top: 0;
 }
 
-.key-data {
+.mmkey-data {
   border: black 2px solid;
   font-family: monospace;
   font-size: 1.8em;
@@ -68,4 +101,34 @@ h3 {
   text-align: justify;
   
   padding: 10px;
+}
+
+.hexkey-data :nth-child(even) {
+  background-color: #eee;
+}
+.hexkey-data {
+  display: grid;
+
+  grid-template-columns: repeat(27, [digit] 1fr);
+
+  border: black 2px solid;
+  font-family: monospace;
+  font-size: 2em;
+}
+
+.hexkey-data div {
+  text-align: center;
+  width: 30px;
+  padding: 3px;
+}
+
+.hexkey-data span {
+  display: block;
+  text-align: center;
+  font-size: 0.38em;
+  color: gray;
+}
+
+.hexkey-data .number {
+  color: blue;
 }

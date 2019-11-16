@@ -9,7 +9,8 @@ require (
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/rakyll/statik v0.1.6
 	github.com/stretchr/testify v1.4.0
+	github.com/tyler-smith/go-bip39 v1.0.2
 	github.com/vrischmann/hutil/v2 v2.0.3
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
 	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
 )

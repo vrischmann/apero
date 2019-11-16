@@ -38,10 +38,19 @@ h3 {
   background: linear-gradient(180deg, #333 94%, orange 6%);
 }
 
+.urls {
+  display: grid;
+
+  grid-template-areas:
+    "provisioning provisioning-url"
+    "endpoint endpoint-url";
+
+  margin-bottom: 3em;
+}
+
 #container-hexkeys {
   display: grid;
   grid-template-areas:
-    "endpoint endpoint"
     "pskey encryptionkey"
     "publickey privatekey";
   column-gap: 1em;
@@ -50,21 +59,15 @@ h3 {
 
 #container-mmkeys {
   display: grid;
-  grid-template-areas: 
-    "endpoint"
+  grid-template-areas:
     "pskey"
     "encryptionkey"
     "publickey"
     "privatekey";
   column-gap: 1em;
   row-gap: 1em;
-  
-  justify-items: center;
-}
 
-.endpoint {
-  grid-area: endpoint;
-  text-align: center;
+  justify-items: center;
 }
 
 .mmkey {
@@ -96,10 +99,10 @@ h3 {
   border: black 2px solid;
   font-family: monospace;
   font-size: 1.8em;
-  
+
   word-wrap: normal;
   text-align: justify;
-  
+
   padding: 10px;
 }
 

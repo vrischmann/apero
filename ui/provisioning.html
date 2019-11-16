@@ -15,10 +15,15 @@
       <a href="#hex">Hex</a>
     </div>
 
+    <div class="urls">
+      <h3>Provisioning URL</h3>
+      <h3>{{ .ProvisioningURL }}</h3>
+
+      <h3>Endpoint</h3>
+      <h3>{{ .Endpoint }}</h3>
+    </div>
+
     <div id="container-hexkeys" style="display: none;">
-      <div class="endpoint">
-        <h1>{{ .Endpoint }}</h1>
-      </div>
       <div class="hexkey">
         <h1>Pre-shared key</h1>
         {{ template "hexkey" (.Hex.PSKey) }}
@@ -38,9 +43,6 @@
     </div>
 
     <div id="container-mmkeys">
-      <div class="endpoint">
-        <h1>{{ .Endpoint }}</h1>
-      </div>
       <div class="hexkey">
         <h1>Pre-shared key</h1>
         {{ template "mmkey" (.Mnemonic.PSKey) }}

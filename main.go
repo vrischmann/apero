@@ -414,6 +414,7 @@ func runProvision(args []string) error {
 	data.Mnemonic.SignPrivateKey = keyToMnemonic(conf.SignPrivateKey[:32])
 
 	// Prepare the HTTP server
+	//
 
 	fm := template.FuncMap{
 		"isalpha": func(r rune) bool { return r == ' ' || (r >= 'a' && r <= 'z') },
@@ -421,9 +422,18 @@ func runProvision(args []string) error {
 		"addone":  func(i int) int { return i + 1 },
 	}
 
-	http.HandleFunc(localProvisioningPath, func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("OK"))
+	http.HandleFunc("/"+localProvisioningPath, func(w http.ResponseWriter, req *http.Request) {
+		data, err := json.Marshal(conf)
+		if err != nil {
+			log.Printf("unable to marshal provisioning config. err: %v", err)
+			http.Error(w, "unable to marhsal provisioning config", http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 	})
+
+	// setup the ui
 
 	http.HandleFunc("/provisioning.css", ui.ServeFile("/provisioning.css"))
 	http.HandleFunc("/provisioning.js", ui.ServeFile("/provisioning.js"))

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -20,6 +19,7 @@ import (
 	"github.com/peterbourgon/ff"
 	"github.com/peterbourgon/ff/ffcli"
 	"github.com/pkg/browser"
+	"github.com/tyler-smith/go-bip39"
 	"github.com/vrischmann/hutil/v2"
 )
 
@@ -302,6 +302,14 @@ func runGenconfig(args []string) error {
 	return nil
 }
 
+func keyToMnemonic(key []byte) string {
+	s, err := bip39.NewMnemonic(key)
+	if err != nil {
+		log.Fatalf("unable to encode key as a mnemonic words. err: %v", err)
+	}
+	return s
+}
+
 func runProvision(args []string) error {
 	var conf clientConfig
 	if _, err := toml.DecodeFile(*globalConfig, &conf); err != nil {
@@ -321,15 +329,16 @@ func runProvision(args []string) error {
 		SignPrivateKey string
 	}
 	data.Endpoint = conf.Endpoint
-	data.PSKey = hex.EncodeToString(conf.PSKey[:])
-	data.EncryptKey = hex.EncodeToString(conf.EncryptKey[:])
-	data.SignPublicKey = hex.EncodeToString(conf.SignPublicKey[:])
-	data.SignPrivateKey = hex.EncodeToString(conf.SignPrivateKey[:])
+
+	data.PSKey = keyToMnemonic(conf.PSKey[:])
+	data.EncryptKey = keyToMnemonic(conf.EncryptKey[:])
+	data.SignPublicKey = keyToMnemonic(conf.SignPublicKey[:])
+	data.SignPrivateKey = keyToMnemonic(conf.SignPrivateKey[:32])
 
 	// Prepare the HTTP server
 
 	fm := template.FuncMap{
-		"isalpha": func(r rune) bool { return r >= 'a' && r <= 'z' },
+		"isalpha": func(r rune) bool { return r == ' ' || (r >= 'a' && r <= 'z') },
 		"runes":   func(s string) []rune { return []rune(s) },
 		"addone":  func(i int) int { return i + 1 },
 	}

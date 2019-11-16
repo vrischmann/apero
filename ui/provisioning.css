@@ -22,20 +22,29 @@ h3 {
 
 .container {
   display: grid;
-  grid-template-columns: repeat(2, [key] 1fr);
+  grid-template-areas: 
+    "endpoint"
+    "pskey"
+    "encryptionkey"
+    "publickey"
+    "privatekey";
   column-gap: 1em;
   row-gap: 1em;
+  
+  justify-items: center;
 }
 
 .endpoint {
-  grid-column: 1 / span 2;
   text-align: center;
 }
 
 .key {
   display: grid;
+
   align-items: start;
   align-content: start;
+
+  width: 90vw;
 }
 
 .key h1 {
@@ -50,32 +59,13 @@ h3 {
   margin-top: 0;
 }
 
-.key-data :nth-child(even) {
-  background-color: #eee;
-}
 .key-data {
-  display: grid;
-
-  grid-template-columns: repeat(29, [digit] 1fr);
-
   border: black 2px solid;
   font-family: monospace;
-  font-size: 2em;
-}
-
-.key-data div {
-  text-align: center;
-  width: 30px;
-  padding: 3px;
-}
-
-.key-data span {
-  display: block;
-  text-align: center;
-  font-size: 0.38em;
-  color: gray;
-}
-
-.key-data .number {
-  color: blue;
+  font-size: 1.8em;
+  
+  word-wrap: normal;
+  text-align: justify;
+  
+  padding: 10px;
 }

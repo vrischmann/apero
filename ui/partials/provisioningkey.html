@@ -1,11 +1,5 @@
 {{ define "key" }}
 <div class="key-data">
-{{ range $i, $b := (runes .) }}
-{{- if (isalpha $b) -}}
-<div class="alpha">{{ printf "%c" $b }}<span>{{ addone $i }}</span></div>
-{{- else -}}
-<div class="number">{{ printf "%c" $b }}<span>{{ addone $i }}</span></div>
-{{- end }}
-{{- end -}}
+{{ . }}
 </div>
 {{ end }}

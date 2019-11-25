@@ -10,10 +10,10 @@ import (
 func TestClientConfigUnmarshalText(t *testing.T) {
 	const data = `
 Endpoint = "http://localhost:7568"
-PSKey = "vfHdOcFfBYP2xvuIJuk+JSBB1o9uCdbOMG7imn0riZk="
-EncryptKey = "jHBWWFhacJjEDo60pqvhVHE4rGVK4pOvxlhC8EoRNPw="
-SignPrivateKey = "KSfVVKjHAlnMWmh5Xr7fCszINOjRGkGfe3Ykx3atTG97+LLeSFWhcmTUrW+20GKCvGwDQVJWqkmX4+sqiXO5ww=="
-SignPublicKey = "e/iy3khVoXJk1K1vttBigrxsA0FSVqpJl+PrKolzucM="
+PSKey = "PWiO5P760SBg4BH1P+GN9lOPiEnyLAtQAgNYKWIiKsU="
+EncryptKey = "IOC0/OivsG4XkFtUBnmVP9Gb9EXHOOj2SMyB2g76bnM="
+SignPublicKey = "bW7CIJBdDTHh5bL5UK7L+AXirOLHQMHSQUi206EoMCI="
+SignPrivateKey = "fR2YhWSJFev9eLUXpQRYyr9CKL7F6Nsq6+JuF84Vz0w="
 `
 
 	var conf clientConfig

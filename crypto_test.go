@@ -21,9 +21,9 @@ func TestKeyPairString(t *testing.T) {
 
 	t.Run("private", func(t *testing.T) {
 		var k privateKey
-		err := (&k).UnmarshalText([]byte(priv.String()))
+		err := (&k).UnmarshalText([]byte(priv.Seed().String()))
 		require.NoError(t, err)
-		require.Equal(t, priv, k)
+		require.Equal(t, priv, k, "unmarshaled key is not equal to expected key")
 	})
 }
 
@@ -75,12 +75,12 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 
 	t.Run("private", func(t *testing.T) {
 		t.Run("normal", func(t *testing.T) {
-			s := priv.String()
+			s := priv.Seed().String()
 
 			var key privateKey
 			err := (&key).UnmarshalText([]byte(s))
 			require.NoError(t, err)
-			require.Equal(t, s, key.String())
+			require.Equal(t, s, key.Seed().String())
 		})
 
 		t.Run("toml", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestKeyPairUnmarshalText(t *testing.T) {
 				Key privateKey
 			}
 
-			md, err := toml.Decode(`Key = "`+priv.String()+`"`, &obj)
+			md, err := toml.Decode(`Key = "`+priv.Seed().String()+`"`, &obj)
 			require.NoError(t, err)
 			require.Empty(t, md.Undecoded())
 		})

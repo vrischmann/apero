@@ -36,12 +36,12 @@ func generateKeyPair() (publicKey, privateKey, error) {
 		return nil, nil, err
 	}
 
-	return publicKey(pub), privateKey(priv.Seed()), nil
+	return publicKey(pub), privateKey(priv), nil
 }
 
 // publicKey is the public key part of a key pair.
 // We redefined the type so we can implement encoding.TextUnmarshaler.
-type publicKey ed25519.PublicKey
+type publicKey []byte
 
 func (k publicKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
@@ -87,7 +87,11 @@ func (k *publicKey) UnmarshalText(p []byte) error {
 
 // privateKey is the public key part of a key pair.
 // We redefined the type so we can implement encoding.TextUnmarshaler.
-type privateKey ed25519.PrivateKey
+type privateKey []byte
+
+func (k privateKey) Seed() privateKey {
+	return privateKey(k[:ed25519.SeedSize])
+}
 
 func (k privateKey) String() string {
 	return base64.StdEncoding.EncodeToString(k)
@@ -98,9 +102,11 @@ func (k privateKey) IsValid() bool {
 }
 
 // MarshalText implements encoding.TextMarshaler
-func (k privateKey) MarshalText() ([]byte, error) {
-	s := k.String()
-	return []byte(s), nil
+func (k privateKey) MarshalText() (res []byte, err error) {
+	priv := ed25519.PrivateKey(k)
+	base64.StdEncoding.Encode(res, priv.Seed())
+
+	return
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler

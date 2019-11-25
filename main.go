@@ -429,6 +429,7 @@ func runProvision(args []string) error {
 			http.Error(w, "unable to marhsal provisioning config", http.StatusInternalServerError)
 		}
 
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(data)
 	})

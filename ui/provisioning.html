@@ -17,46 +17,46 @@
 
     <div class="urls">
       <h3>Provisioning URL</h3>
-      <h3>{{ .ProvisioningURL }}</h3>
+      <h4>{{ .ProvisioningURL }}</h4>
 
       <h3>Endpoint</h3>
-      <h3>{{ .Endpoint }}</h3>
+      <h4>{{ .Endpoint }}</h4>
     </div>
 
     <div id="container-hexkeys" style="display: none;">
       <div class="hexkey">
-        <h1>Pre-shared key</h1>
+        <h2>Pre-shared key</h2>
         {{ template "hexkey" (.Hex.PSKey) }}
       </div>
       <div class="hexkey">
-        <h1>Encryption key</h1>
+        <h2>Encryption key</h2>
         {{ template "hexkey" (.Hex.EncryptKey) }}
       </div>
       <div class="hexkey">
-        <h1>Sign public key</h1>
+        <h2>Sign public key</h2>
         {{ template "hexkey" (.Hex.SignPublicKey) }}
       </div>
       <div class="hexkey">
-        <h1>Sign private key</h1>
+        <h2>Sign private key</h2>
         {{ template "hexkey" (.Hex.SignPrivateKey) }}
       </div>
     </div>
 
     <div id="container-mmkeys">
       <div class="hexkey">
-        <h1>Pre-shared key</h1>
+        <h2>Pre-shared key</h2>
         {{ template "mmkey" (.Mnemonic.PSKey) }}
       </div>
       <div class="hexkey">
-        <h1>Encryption key</h1>
+        <h2>Encryption key</h2>
         {{ template "mmkey" (.Mnemonic.EncryptKey) }}
       </div>
       <div class="hexkey">
-        <h1>Sign public key</h1>
+        <h2>Sign public key</h2>
         {{ template "mmkey" (.Mnemonic.SignPublicKey) }}
       </div>
       <div class="hexkey">
-        <h1>Sign private key</h1>
+        <h2>Sign private key</h2>
         {{ template "mmkey" (.Mnemonic.SignPrivateKey) }}
       </div>
     </div>

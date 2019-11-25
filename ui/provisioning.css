@@ -45,7 +45,9 @@ h3 {
     "provisioning provisioning-url"
     "endpoint endpoint-url";
 
-  margin-bottom: 3em;
+  margin-bottom: 2em;
+  margin-top: 2em;
+  justify-content: space-evenly;
 }
 
 #container-hexkeys {
@@ -83,7 +85,7 @@ h3 {
   align-content: start;
 }
 
-.hexkey h1, .mmkey h1 {
+.hexkey h2, .mmkey h2 {
   text-align: center;
 
   background-color: #eee;
